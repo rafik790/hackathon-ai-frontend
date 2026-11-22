@@ -1,0 +1,45 @@
+<ol class="timeline" aria-label="Task execution timeline">
+  <li
+    *ngFor="let step of steps; trackBy: trackById; let last = last"
+    class="step"
+    [class]="'step tone-' + step.tone"
+    [class.origin]="step.isFailureOrigin"
+  >
+    <div class="rail" aria-hidden="true">
+      <span class="node"><mat-icon>{{ step.icon }}</mat-icon></span>
+      <span class="line" *ngIf="!last"></span>
+    </div>
+
+    <button type="button" class="content" (click)="taskSelect.emit(step.task)" [attr.aria-label]="'Open TaskRun ' + step.task.taskRunName">
+      <div class="head">
+        <div class="names">
+          <span class="task-name">{{ step.task.taskName ?? step.task.taskRunName }}</span>
+          <span class="run-name mono">{{ step.task.taskRunName }}</span>
+        </div>
+        <div class="meta">
+          <span class="origin-chip" *ngIf="step.isFailureOrigin"><mat-icon>flag</mat-icon>Failure origin</span>
+          <app-status-badge [status]="step.task.status" size="sm"></app-status-badge>
+          <app-duration [ms]="step.task.durationMs" [status]="step.task.status" [startTime]="step.task.startTime"></app-duration>
+        </div>
+      </div>
+
+      <div class="gantt" *ngIf="windowMs > 0" aria-hidden="true">
+        <span
+          *ngIf="step.offsetPct !== null && step.widthPct !== null; else notStarted"
+          class="bar"
+          [style.left.%]="step.offsetPct"
+          [style.width.%]="step.widthPct"
+        ></span>
+        <ng-template #notStarted><span class="not-started">No start time recorded</span></ng-template>
+      </div>
+      <div class="offset" *ngIf="step.offsetMs !== null && windowMs > 0">
+        Started +{{ step.offsetMs | duration }} · {{ step.task.startTime | date: 'HH:mm:ss' }}
+      </div>
+
+      <div class="failure" *ngIf="step.task.status === 'FAILED' && (step.task.failureReason || step.task.failureMessage)">
+        <strong>{{ step.task.failureReason }}</strong>
+        <span *ngIf="step.task.failureMessage">{{ step.task.failureMessage }}</span>
+      </div>
+    </button>
+  </li>
+</ol>

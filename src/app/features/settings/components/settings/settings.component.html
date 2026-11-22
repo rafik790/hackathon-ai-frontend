@@ -1,0 +1,111 @@
+<app-page-header title="Settings" description="Application information, monitoring configuration and display preferences.">
+  <ng-container pageActions>
+    <a mat-stroked-button [href]="apiDocsUrl" target="_blank" rel="noopener"><mat-icon>description</mat-icon> API documentation</a>
+  </ng-container>
+</app-page-header>
+
+<div class="page-stack">
+  <div class="inline-alert neutral">
+    <mat-icon>lock</mat-icon>
+    <span>Backend configuration is read-only here. It is set through the agent's environment variables (for example <code>MONITORING_NAMESPACES</code> and <code>MONITORING_POLLING_INTERVAL_MS</code>). Credentials are never exposed.</span>
+  </div>
+
+  <div class="grid-2">
+    <section class="card" *ngIf="info$ | async as info">
+      <header class="card-header"><h2>Application</h2></header>
+      <div class="card-body">
+        <app-loading-skeleton *ngIf="info.loading && !info.data" [rows]="4"></app-loading-skeleton>
+        <app-error-state *ngIf="info.error && !info.data" [error]="info.error" (retry)="reload()"></app-error-state>
+        <dl class="kv-grid" *ngIf="info.data as data">
+          <div><dt>Name</dt><dd>{{ data.app?.name ?? '—' }}</dd></div>
+          <div><dt>Description</dt><dd>{{ data.app?.description ?? '—' }}</dd></div>
+          <div><dt>Backend phase</dt><dd>{{ data.app?.phase ?? '—' }}</dd></div>
+          <div><dt>Frontend version</dt><dd class="mono">{{ frontendVersion }}</dd></div>
+          <div><dt>Java runtime</dt><dd>{{ data.java?.version ?? '—' }} <span class="text-muted" *ngIf="data.java?.vendor?.name">({{ data.java?.vendor?.name }})</span></dd></div>
+          <div><dt>JVM</dt><dd>{{ data.java?.jvm?.name ?? '—' }}</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="card" *ngIf="collector$ | async as collector">
+      <header class="card-header">
+        <h2>Monitoring configuration</h2>
+        <a mat-button color="primary" routerLink="/monitoring">Collector status <mat-icon iconPositionEnd>arrow_forward</mat-icon></a>
+      </header>
+      <div class="card-body">
+        <app-loading-skeleton *ngIf="collector.loading && !collector.data" [rows]="3"></app-loading-skeleton>
+        <app-error-state *ngIf="collector.error && !collector.data" [error]="collector.error" (retry)="reload()"></app-error-state>
+        <dl class="kv-grid" *ngIf="collector.data as status">
+          <div>
+            <dt>Collection</dt>
+            <dd><app-status-badge [status]="status.enabled ? 'UP' : 'DISABLED'" [label]="status.enabled ? 'Enabled' : 'Disabled'" size="sm"></app-status-badge></dd>
+          </div>
+          <div><dt>Collection interval</dt><dd>{{ status.pollingIntervalMs | duration }}</dd></div>
+          <div class="wide">
+            <dt>Monitored namespaces</dt>
+            <dd class="chips">
+              <span class="ns-chip" *ngFor="let ns of status.namespaces">{{ ns }}</span>
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+  </div>
+
+  <div class="grid-2">
+    <section class="card">
+      <header class="card-header">
+        <div>
+          <h2>API connectivity</h2>
+          <div class="subtitle">URLs are relative to this page's base path, so no host or IP is hardcoded.</div>
+        </div>
+        <button mat-flat-button color="primary" type="button" (click)="testConnection()" [disabled]="testing">
+          <mat-icon>network_check</mat-icon> {{ testing ? 'Testing…' : 'Test connection' }}
+        </button>
+      </header>
+      <div class="card-body">
+        <dl class="kv-grid single">
+          <div *ngFor="let e of endpoints">
+            <dt>{{ e.label }}</dt>
+            <dd class="uid"><span class="mono">{{ e.url }}</span>
+              <button mat-icon-button type="button" [appCopyToClipboard]="e.url" [copyLabel]="e.label + ' URL'" aria-label="Copy URL" matTooltip="Copy URL">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            </dd>
+          </div>
+        </dl>
+        <div *ngIf="connectivity as c" class="inline-alert result" [class.danger]="!c.ok" role="status">
+          <mat-icon>{{ c.ok ? 'check_circle' : 'error' }}</mat-icon>
+          <span>{{ c.message }} · {{ c.latencyMs }} ms · {{ c.checkedAt | date: 'HH:mm:ss' }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <header class="card-header">
+        <div>
+          <h2>Display preferences</h2>
+          <div class="subtitle">Stored in this browser only</div>
+        </div>
+        <button mat-button type="button" (click)="resetPreferences()"><mat-icon>restart_alt</mat-icon> Reset</button>
+      </header>
+      <form class="card-body prefs" [formGroup]="form">
+        <mat-slide-toggle formControlName="autoRefresh" color="primary">Auto-refresh data</mat-slide-toggle>
+        <mat-form-field appearance="outline">
+          <mat-label>Refresh interval</mat-label>
+          <mat-select formControlName="refreshIntervalMs">
+            <mat-option *ngFor="let i of intervals" [value]="i.ms">Every {{ i.label }}</mat-option>
+          </mat-select>
+          <mat-hint>Auto-refresh pauses while this tab is in the background.</mat-hint>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Default time range</mat-label>
+          <mat-select formControlName="defaultRange">
+            <mat-option *ngFor="let r of ranges" [value]="r.value">{{ r.label }}</mat-option>
+          </mat-select>
+          <mat-hint>Used by Overview and Failure Analysis.</mat-hint>
+        </mat-form-field>
+      </form>
+    </section>
+  </div>
+</div>

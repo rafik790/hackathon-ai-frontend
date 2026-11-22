@@ -1,0 +1,9 @@
+@use 'tokens' as t;
+
+.wide { grid-column: 1 / -1; }
+
+
+.result { margin-top: t.$space-4; }
+.inline-alert.result:not(.danger) { background: t.$success-bg; border-color: t.$success-border; color: #067647; }
+
+.prefs { display: grid; gap: t.$space-4; max-width: 420px; }

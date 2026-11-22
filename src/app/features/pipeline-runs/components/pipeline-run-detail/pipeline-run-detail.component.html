@@ -1,0 +1,147 @@
+<ng-container *ngIf="state$ | async as state">
+  <ng-container *ngIf="state.data as detail; else noData">
+    <ng-container *ngIf="detail.run as run">
+      <app-page-header [title]="run.pipelineRunName" [description]="run.pipelineName ? 'PipelineRun of pipeline ' + run.pipelineName : 'PipelineRun'">
+        <app-status-badge pageTitleSuffix [status]="run.status"></app-status-badge>
+        <ng-container pageMeta>
+          <span class="meta-item"><mat-icon aria-hidden="true">folder_open</mat-icon><code>{{ run.namespace }}</code></span>
+          <span class="meta-item" *ngIf="run.startTime"><mat-icon aria-hidden="true">play_circle</mat-icon>Started {{ run.startTime | date: 'MMM d, y, HH:mm:ss' }}</span>
+          <span class="meta-item"><mat-icon aria-hidden="true">timer</mat-icon><app-duration [ms]="run.durationMs" [status]="run.status" [startTime]="run.startTime"></app-duration></span>
+        </ng-container>
+        <ng-container pageActions>
+          <a mat-stroked-button routerLink="/task-runs" [queryParams]="{ pipelineRunName: run.pipelineRunName, namespace: run.namespace }">
+            <mat-icon>checklist</mat-icon> Task runs
+          </a>
+          <app-refresh-button [loading]="state.loading" (refresh)="reload()"></app-refresh-button>
+        </ng-container>
+      </app-page-header>
+
+      <div class="page-stack">
+        <app-error-state *ngIf="state.error" [inline]="true" [error]="state.error" (retry)="reload()"></app-error-state>
+
+        <section class="failure-panel" *ngIf="run.status === 'FAILED'" role="region" aria-label="Failure details">
+          <mat-icon aria-hidden="true">error</mat-icon>
+          <div class="failure-text">
+            <h2>{{ run.failureReason || 'Pipeline run failed' }}</h2>
+            <pre *ngIf="run.failureMessage">{{ run.failureMessage }}</pre>
+            <p class="origin" *ngIf="(detail.tasks | firstFailedTask) as origin">
+              First failing task:
+              <button type="button" class="link-button" (click)="openTask(origin)">{{ origin.taskName ?? origin.taskRunName }}</button>
+              <span *ngIf="origin.failureMessage"> — {{ origin.failureMessage }}</span>
+            </p>
+          </div>
+        </section>
+
+        <div class="grid-main-side">
+          <section class="card">
+            <header class="card-header">
+              <div>
+                <h2>Execution timeline</h2>
+                <div class="subtitle">TaskRuns in start order; bars show when each task ran within the pipeline.</div>
+              </div>
+              <div class="task-counts" *ngIf="taskSummary$ | async as ts">
+                <span>{{ ts.total }} tasks</span>
+                <span class="ok" *ngIf="ts.succeeded">{{ ts.succeeded }} succeeded</span>
+                <span class="bad" *ngIf="ts.failed">{{ ts.failed }} failed</span>
+                <span class="run" *ngIf="ts.running">{{ ts.running }} running</span>
+                <span *ngIf="ts.unknown">{{ ts.unknown }} unknown</span>
+              </div>
+            </header>
+            <div class="card-body">
+              <app-execution-timeline
+                *ngIf="detail.tasks.length; else noTasks"
+                [tasks]="detail.tasks"
+                [windowStart]="run.startTime"
+                [windowEnd]="run.completionTime"
+                (taskSelect)="openTask($event)"
+              ></app-execution-timeline>
+              <ng-template #noTasks>
+                <app-empty-state
+                  icon="checklist"
+                  title="No task runs collected"
+                  message="The collector has not stored any TaskRuns for this PipelineRun yet."
+                  [compact]="true"
+                ></app-empty-state>
+              </ng-template>
+            </div>
+          </section>
+
+          <section class="card">
+            <header class="card-header"><h2>Details</h2></header>
+            <div class="card-body">
+              <dl class="kv-grid single">
+                <div><dt>PipelineRun</dt><dd class="mono">{{ run.pipelineRunName }}</dd></div>
+                <div><dt>Pipeline</dt><dd>{{ run.pipelineName ?? '—' }}</dd></div>
+                <div><dt>Namespace</dt><dd class="mono">{{ run.namespace }}</dd></div>
+                <div>
+                  <dt>UID</dt>
+                  <dd class="uid">
+                    <span class="mono">{{ run.pipelineRunUid }}</span>
+                    <button mat-icon-button type="button" [appCopyToClipboard]="run.pipelineRunUid" copyLabel="UID" aria-label="Copy UID" matTooltip="Copy UID">
+                      <mat-icon>content_copy</mat-icon>
+                    </button>
+                  </dd>
+                </div>
+                <div><dt>Status</dt><dd><app-status-badge [status]="run.status" size="sm"></app-status-badge></dd></div>
+                <div><dt>Started</dt><dd>{{ (run.startTime | date: 'medium') ?? '—' }}</dd></div>
+                <div><dt>Completed</dt><dd>{{ (run.completionTime | date: 'medium') ?? '—' }}</dd></div>
+                <div><dt>Duration</dt><dd><app-duration [ms]="run.durationMs" [status]="run.status" [startTime]="run.startTime"></app-duration></dd></div>
+                <div><dt>Resource created</dt><dd>{{ (run.resourceCreatedAt | date: 'medium') ?? '—' }}</dd></div>
+                <div><dt>First collected</dt><dd>{{ (run.createdAt | date: 'medium') ?? '—' }}</dd></div>
+                <div><dt>Last updated</dt><dd>{{ (run.updatedAt | date: 'medium') ?? '—' }}</dd></div>
+                <div *ngIf="run.failureReason"><dt>Failure reason</dt><dd>{{ run.failureReason }}</dd></div>
+              </dl>
+            </div>
+          </section>
+        </div>
+
+        <section class="card">
+          <header class="card-header">
+            <div>
+              <h2>Task runs</h2>
+              <div class="subtitle">Ordered by start time</div>
+            </div>
+          </header>
+          <app-data-table
+            [columns]="taskColumns"
+            [data]="detail.tasks"
+            [showPaginator]="false"
+            [loading]="state.loading"
+            [highlight]="isFailed"
+            [rowLabel]="taskRowLabel"
+            emptyIcon="checklist"
+            emptyTitle="No task runs collected"
+            emptyMessage="No TaskRuns are stored for this PipelineRun."
+            (rowClick)="openTask($event)"
+          ></app-data-table>
+        </section>
+
+        <app-pending-feature
+          title="Parameters, labels and annotations"
+          icon="data_object"
+          description="The backend stores normalized execution metadata only. PipelineRun parameters, labels, annotations and results are not collected yet."
+          [items]="['Pipeline parameters', 'Kubernetes labels and annotations', 'Pipeline results']"
+          [compact]="true"
+        ></app-pending-feature>
+      </div>
+    </ng-container>
+  </ng-container>
+
+  <ng-template #noData>
+    <app-page-header title="Pipeline run"></app-page-header>
+    <section class="card">
+      <app-loading-skeleton *ngIf="state.loading" variant="rows" [rows]="8"></app-loading-skeleton>
+      <ng-container *ngIf="!state.loading && state.error">
+        <app-empty-state
+          *ngIf="state.error.status === 404; else genericError"
+          icon="search_off"
+          title="Pipeline run not found"
+          message="This PipelineRun does not exist or is no longer stored by the agent."
+        >
+          <a mat-flat-button color="primary" routerLink="/pipeline-runs">Back to pipeline runs</a>
+        </app-empty-state>
+        <ng-template #genericError><app-error-state [error]="state.error" (retry)="reload()"></app-error-state></ng-template>
+      </ng-container>
+    </section>
+  </ng-template>
+</ng-container>

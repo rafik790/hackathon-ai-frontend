@@ -1,0 +1,37 @@
+@use 'tokens' as t;
+
+:host { display: block; min-width: 0; }
+
+.table-shell { position: relative; }
+
+.progress { position: absolute; top: 0; left: 0; right: 0; z-index: 2; height: 2px; }
+
+.inline-error { display: block; margin: t.$space-3 t.$space-4; }
+
+.scroll { overflow-x: auto; }
+
+table { width: 100%; }
+
+.mat-mdc-header-cell, .mat-mdc-cell { padding: 0 t.$space-3; }
+.mat-mdc-header-cell:first-of-type, .mat-mdc-cell:first-of-type { padding-left: t.$space-5; }
+.mat-mdc-header-cell:last-of-type, .mat-mdc-cell:last-of-type { padding-right: t.$space-4; }
+
+.mat-mdc-row.highlight .mat-mdc-cell:first-of-type { box-shadow: inset 3px 0 0 t.$danger; }
+
+.cell-text { display: flex; flex-direction: column; min-width: 0; padding: 6px 0; }
+.cell-text > span { @include t.truncate; max-width: 340px; }
+.primary { font-weight: t.$fw-medium; color: t.$text; }
+.mono { font-family: t.$font-mono; font-size: t.$fs-sm; }
+.secondary { font-size: t.$fs-xs; color: t.$text-muted; }
+
+.kind-duration, .kind-datetime { white-space: nowrap; font-variant-numeric: tabular-nums; color: t.$text-secondary; }
+
+.actions-cell { width: 56px; text-align: right; }
+
+@include t.respond-below(t.$bp-lg) {
+  .hide-below-lg { display: none; }
+}
+
+@include t.respond-below(t.$bp-md) {
+  .hide-below-md, .hide-below-lg { display: none; }
+}

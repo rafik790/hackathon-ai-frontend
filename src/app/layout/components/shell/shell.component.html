@@ -1,0 +1,23 @@
+<ng-container *ngIf="vm$ | async as vm">
+  <mat-progress-bar *ngIf="loading$ | async" class="global-progress" mode="indeterminate" aria-label="Loading"></mat-progress-bar>
+
+  <mat-sidenav-container class="container" [hasBackdrop]="vm.isHandset">
+    <mat-sidenav
+      class="sidenav"
+      [class.collapsed]="vm.collapsed"
+      [mode]="vm.isHandset ? 'over' : 'side'"
+      [opened]="!vm.isHandset || vm.mobileOpen"
+      [disableClose]="!vm.isHandset"
+      (closedStart)="closeMobile()"
+    >
+      <app-sidebar [collapsed]="vm.collapsed"></app-sidebar>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="content">
+      <app-topbar [isHandset]="vm.isHandset" [collapsed]="vm.collapsed" (toggleSidebar)="toggleSidebar(vm.isHandset)"></app-topbar>
+      <main class="page" id="main-content">
+        <router-outlet></router-outlet>
+      </main>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</ng-container>

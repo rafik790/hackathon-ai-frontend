@@ -1,0 +1,53 @@
+<header class="topbar">
+  <button
+    mat-icon-button
+    type="button"
+    class="toggle"
+    (click)="toggleSidebar.emit()"
+    [attr.aria-label]="isHandset ? 'Open navigation' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+    [matTooltip]="isHandset ? 'Menu' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+  >
+    <mat-icon>{{ isHandset ? 'menu' : collapsed ? 'menu_open' : 'menu' }}</mat-icon>
+  </button>
+
+  <app-breadcrumb class="crumbs" [items]="(breadcrumbs$ | async) ?? []"></app-breadcrumb>
+
+  <span class="spacer"></span>
+
+  <a *ngIf="health$ | async as health" class="collector-pill" [class]="'collector-pill state-' + health" routerLink="/monitoring">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="text">{{ healthLabels[health] }}</span>
+  </a>
+
+  <div class="refreshed" *ngIf="lastRefreshed$ | async as last" [matTooltip]="'Last successful API response: ' + (last | date: 'medium')">
+    <mat-icon aria-hidden="true">schedule</mat-icon>
+    <span>Updated {{ last | relativeTime: ((now$ | async) ?? undefined) }}</span>
+  </div>
+
+  <ng-container *ngIf="preferences$ | async as prefs">
+    <button
+      mat-button
+      type="button"
+      class="auto-button"
+      [matMenuTriggerFor]="autoMenu"
+      [matTooltip]="prefs.autoRefresh ? 'Data reloads automatically every ' + (prefs.refreshIntervalMs | duration) : 'Auto-refresh is off'"
+      aria-label="Auto-refresh settings"
+    >
+      <mat-icon>{{ prefs.autoRefresh ? 'timer' : 'timer_off' }}</mat-icon>
+      <span class="auto-label">{{ prefs.autoRefresh ? 'Auto ' + (prefs.refreshIntervalMs | duration) : 'Auto off' }}</span>
+    </button>
+    <mat-menu #autoMenu="matMenu" xPosition="before">
+      <div class="menu-title" mat-menu-item disabled>Auto-refresh</div>
+      <button mat-menu-item type="button" (click)="setAutoRefresh(false)">
+        <mat-icon>{{ prefs.autoRefresh ? 'radio_button_unchecked' : 'radio_button_checked' }}</mat-icon>
+        <span>Off</span>
+      </button>
+      <button mat-menu-item type="button" *ngFor="let option of intervals" (click)="setInterval(option.ms)">
+        <mat-icon>{{ prefs.autoRefresh && prefs.refreshIntervalMs === option.ms ? 'radio_button_checked' : 'radio_button_unchecked' }}</mat-icon>
+        <span>Every {{ option.label }}</span>
+      </button>
+    </mat-menu>
+  </ng-container>
+
+  <app-refresh-button [loading]="(loading$ | async) ?? false" tooltip="Refresh all data" (refresh)="refresh()"></app-refresh-button>
+</header>

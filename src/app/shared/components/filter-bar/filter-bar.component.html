@@ -1,0 +1,50 @@
+<form class="filter-bar" [formGroup]="form" (ngSubmit)="$event.preventDefault()" role="search">
+  <mat-form-field appearance="outline" class="compact-field search">
+    <mat-icon matIconPrefix>search</mat-icon>
+    <mat-label>{{ searchLabel }}</mat-label>
+    <input matInput formControlName="search" autocomplete="off" [matTooltip]="searchHint" matTooltipPosition="above" />
+    <button *ngIf="form.value.search" matSuffix mat-icon-button type="button" aria-label="Clear" (click)="form.controls.search.setValue('')">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+
+  <mat-form-field *ngIf="secondarySearchLabel" appearance="outline" class="compact-field search">
+    <mat-label>{{ secondarySearchLabel }}</mat-label>
+    <input matInput formControlName="secondarySearch" autocomplete="off" [matTooltip]="searchHint" matTooltipPosition="above" />
+    <button
+      *ngIf="form.value.secondarySearch"
+      matSuffix
+      mat-icon-button
+      type="button"
+      aria-label="Clear"
+      (click)="form.controls.secondarySearch.setValue('')"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="compact-field select">
+    <mat-label>Status</mat-label>
+    <mat-select formControlName="status">
+      <mat-option [value]="null">All statuses</mat-option>
+      <mat-option *ngFor="let s of statuses" [value]="s.value">
+        <app-status-badge [status]="s.value" size="sm"></app-status-badge>
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="compact-field select">
+    <mat-label>Namespace</mat-label>
+    <mat-select formControlName="namespace">
+      <mat-option [value]="null">All namespaces</mat-option>
+      <mat-option *ngFor="let ns of namespaces" [value]="ns">{{ ns }}</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <app-date-range-filter *ngIf="showDateRange" [group]="form.controls.dates"></app-date-range-filter>
+
+  <button *ngIf="activeCount > 0" mat-button type="button" class="clear" (click)="clear()">
+    <mat-icon>filter_alt_off</mat-icon>
+    Clear filters ({{ activeCount }})
+  </button>
+</form>

@@ -1,0 +1,50 @@
+@use '@angular/material' as mat;
+@use 'tokens' as t;
+
+$_primary: mat.define-palette((
+  50: t.$primary-50,
+  100: t.$primary-100,
+  200: t.$primary-200,
+  300: #8db3ff,
+  400: #4f86f5,
+  500: t.$primary-500,
+  600: t.$primary-600,
+  700: t.$primary-700,
+  800: #1e3a8a,
+  900: #172554,
+  A100: #dbe7ff,
+  A200: #a9c4ff,
+  A400: #5b8cff,
+  A700: #2f66f3,
+  contrast: (
+    50: rgba(0, 0, 0, 0.87), 100: rgba(0, 0, 0, 0.87), 200: rgba(0, 0, 0, 0.87), 300: rgba(0, 0, 0, 0.87),
+    400: white, 500: white, 600: white, 700: white, 800: white, 900: white,
+    A100: rgba(0, 0, 0, 0.87), A200: rgba(0, 0, 0, 0.87), A400: white, A700: white,
+  ),
+), 500);
+$_accent: mat.define-palette(mat.$blue-grey-palette, 600);
+$_warn: mat.define-palette(mat.$red-palette, 600);
+
+$_typography: mat.define-typography-config(
+  $font-family: t.$font-family,
+  $body-1: mat.define-typography-level(14px, 20px, 400),
+  $body-2: mat.define-typography-level(13px, 20px, 400),
+  $button: mat.define-typography-level(13px, 20px, 500, $letter-spacing: 0.01em),
+);
+
+$app-theme: mat.define-light-theme((
+  color: (primary: $_primary, accent: $_accent, warn: $_warn),
+  typography: $_typography,
+  density: -1,
+));
+
+@include mat.core();
+@include mat.all-component-themes($app-theme);
+
+// Tables, paginators and filter fields read better denser than the global density.
+.density-compact {
+  @include mat.table-density(-2);
+  @include mat.paginator-density(-3);
+  @include mat.form-field-density(-4);
+  @include mat.select-density(-2);
+}

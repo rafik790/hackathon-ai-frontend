@@ -1,0 +1,12 @@
+.git
+.angular
+.vscode
+.idea
+.claude
+node_modules
+dist
+coverage
+k8s
+*.md
+Dockerfile
+.dockerignore

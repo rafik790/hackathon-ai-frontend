@@ -1,0 +1,16 @@
+{
+  "/agent/api": {
+    "target": "http://65.0.96.142:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/agent": "" },
+    "logLevel": "warn"
+  },
+  "/agent/actuator": {
+    "target": "http://65.0.96.142:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/agent": "" },
+    "logLevel": "warn"
+  }
+}

@@ -1,0 +1,43 @@
+<app-page-header title="Pipeline Runs" description="Tekton PipelineRuns collected from the monitored namespaces.">
+  <ng-container pageActions>
+    <app-refresh-button label="Refresh" [loading]="(state$ | async)?.loading ?? false" (refresh)="reload()"></app-refresh-button>
+  </ng-container>
+</app-page-header>
+
+<ng-container *ngIf="query$ | async as query">
+  <section class="card" *ngIf="state$ | async as state">
+    <div class="card-header filters density-compact">
+      <app-filter-bar
+        [value]="(filterValue$ | async)!"
+        [namespaces]="(namespaces$ | async) ?? []"
+        searchLabel="Pipeline name"
+        searchHint="Exact pipeline name, e.g. demo-app-build"
+        (filterChange)="onFilter(query, $event)"
+      ></app-filter-bar>
+      <span class="subtitle" *ngIf="state.data">{{ state.data.totalElements | number }} pipeline runs</span>
+    </div>
+
+    <app-data-table
+      [columns]="columns"
+      [data]="state.data?.content ?? null"
+      [totalElements]="state.data?.totalElements ?? 0"
+      [pageIndex]="query.page"
+      [pageSize]="query.size"
+      [sortActive]="query.sort"
+      [sortDirection]="query.direction"
+      [loading]="state.loading"
+      [error]="state.error"
+      [rowActions]="actions"
+      [highlight]="isFailed"
+      [rowLabel]="rowLabel"
+      emptyIcon="account_tree"
+      emptyTitle="No pipeline runs found"
+      emptyMessage="No PipelineRuns match these filters. Filters on names are exact matches."
+      (pageChange)="onPage(query, $event)"
+      (sortChange)="onSort(query, $event)"
+      (rowClick)="open($event)"
+      (action)="onAction($event)"
+      (retry)="reload()"
+    ></app-data-table>
+  </section>
+</ng-container>

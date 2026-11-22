@@ -1,0 +1,16 @@
+@use 'tokens' as t;
+
+.ns-field { width: 190px; }
+
+.sample-note {
+  display: flex;
+  align-items: center;
+  gap: t.$space-2;
+  font-size: t.$fs-sm;
+  color: t.$text-muted;
+  .mat-icon { font-size: 16px; width: 16px; height: 16px; flex: none; }
+}
+
+@include t.respond-below(t.$bp-sm) {
+  .ns-field { width: 100%; }
+}

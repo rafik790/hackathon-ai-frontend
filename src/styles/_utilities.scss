@@ -1,0 +1,141 @@
+@use 'tokens' as t;
+
+.card {
+  @include t.card;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: t.$space-3;
+  padding: t.$space-4 t.$space-5;
+  border-bottom: 1px solid t.$border;
+
+  h2, h3 { font-size: t.$fs-md; font-weight: t.$fw-semibold; }
+  .subtitle { font-size: t.$fs-sm; color: t.$text-muted; margin-top: 2px; }
+  .actions { display: flex; align-items: center; gap: t.$space-2; flex-wrap: wrap; }
+}
+
+.card-body { padding: t.$space-5; }
+
+.page-stack { display: grid; gap: t.$space-5; grid-template-columns: minmax(0, 1fr); }
+
+.grid-2 { display: grid; gap: t.$space-5; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-3 { display: grid; gap: t.$space-5; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-main-side { display: grid; gap: t.$space-5; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.kpi-grid { display: grid; gap: t.$space-4; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.kpi-grid.six { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+@media (max-width: 1599.98px) {
+  .kpi-grid.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@include t.respond-below(t.$bp-lg) {
+  .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-main-side { grid-template-columns: minmax(0, 1fr); }
+}
+
+@include t.respond-below(t.$bp-md) {
+  .grid-2, .grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .kpi-grid.six { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.text-muted { color: t.$text-muted; }
+.text-secondary { color: t.$text-secondary; }
+.text-danger { color: t.$danger; }
+.eyebrow { @include t.eyebrow; }
+.truncate { @include t.truncate; }
+.spacer { flex: 1 1 auto; }
+.nowrap { white-space: nowrap; }
+
+.inline-alert {
+  display: flex;
+  gap: t.$space-3;
+  align-items: flex-start;
+  padding: t.$space-3 t.$space-4;
+  border-radius: t.$radius-md;
+  font-size: t.$fs-base;
+  border: 1px solid t.$info-border;
+  background: t.$info-bg;
+  color: t.$primary-700;
+
+  .mat-icon { flex: none; font-size: 18px; width: 18px; height: 18px; margin-top: 1px; }
+
+  &.warning { background: t.$warning-bg; border-color: t.$warning-border; color: #92400e; }
+  &.danger { background: t.$danger-bg; border-color: t.$danger-border; color: #991b1b; }
+  &.neutral { background: t.$neutral-bg; border-color: t.$neutral-border; color: t.$gray-700; }
+}
+
+// Key/value metadata lists used on detail pages.
+.kv-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: t.$space-4 t.$space-6;
+  margin: 0;
+
+  dt { @include t.eyebrow; margin-bottom: 4px; }
+  dd { margin: 0; font-size: t.$fs-md; color: t.$text; word-break: break-word; }
+}
+
+.link-button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: t.$primary-600;
+  font: inherit;
+  cursor: pointer;
+  &:hover { text-decoration: underline; }
+}
+
+.kv-grid.single { grid-template-columns: minmax(0, 1fr); gap: t.$space-3; }
+
+// Header metadata chips (icon + text) used on detail pages.
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: t.$fs-sm;
+  color: t.$text-secondary;
+  .mat-icon { font-size: 16px; width: 16px; height: 16px; color: t.$text-muted; }
+}
+
+// Prominent failure summary on PipelineRun / TaskRun detail pages.
+.failure-panel {
+  display: flex;
+  gap: t.$space-4;
+  padding: t.$space-4 t.$space-5;
+  border: 1px solid t.$danger-border;
+  border-left: 4px solid t.$danger;
+  border-radius: t.$radius-lg;
+  background: t.$danger-bg;
+
+  > .mat-icon { color: t.$danger; flex: none; margin-top: 2px; }
+  .failure-text { min-width: 0; }
+  h2 { font-size: t.$fs-lg; color: #7a271a; }
+  pre, p { margin: t.$space-2 0 0; font-size: t.$fs-sm; color: #912018; }
+  pre { font-family: t.$font-mono; white-space: pre-wrap; word-break: break-word; }
+}
+
+// Identifier with a copy button.
+.uid {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  .mono { font-size: t.$fs-sm; word-break: break-all; }
+  button { flex: none; transform: scale(0.85); }
+}
+
+// Monospace chip for Kubernetes namespaces.
+.ns-chip {
+  font-family: t.$font-mono;
+  font-size: t.$fs-sm;
+  padding: 2px 8px;
+  border-radius: t.$radius-sm;
+  background: t.$primary-50;
+  color: t.$primary-700;
+  border: 1px solid t.$primary-100;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: t.$space-2; }

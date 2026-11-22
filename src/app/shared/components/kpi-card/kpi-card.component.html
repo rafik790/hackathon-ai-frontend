@@ -1,0 +1,24 @@
+<ng-template #content>
+  <div class="top">
+    <span class="label">{{ label }}</span>
+    <span class="icon" [class]="'icon tone-' + tone" aria-hidden="true">
+      <mat-icon>{{ icon }}</mat-icon>
+    </span>
+  </div>
+  <ng-container *ngIf="!loading || value !== null; else skeleton">
+    <div class="value">{{ value ?? '—' }}</div>
+    <div class="caption" *ngIf="caption">{{ caption }}</div>
+  </ng-container>
+  <ng-template #skeleton>
+    <app-loading-skeleton variant="kpi"></app-loading-skeleton>
+  </ng-template>
+</ng-template>
+
+<a *ngIf="link; else plain" class="kpi clickable" [routerLink]="link" [queryParams]="linkQueryParams">
+  <ng-container [ngTemplateOutlet]="content"></ng-container>
+</a>
+<ng-template #plain>
+  <div class="kpi">
+    <ng-container [ngTemplateOutlet]="content"></ng-container>
+  </div>
+</ng-template>

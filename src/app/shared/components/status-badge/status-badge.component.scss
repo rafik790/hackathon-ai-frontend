@@ -1,0 +1,35 @@
+@use 'tokens' as t;
+
+:host { display: inline-flex; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: t.$radius-pill;
+  border: 1px solid transparent;
+  font-weight: t.$fw-medium;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.size-md { padding: 4px 10px 4px 8px; font-size: t.$fs-sm; }
+.size-sm { padding: 3px 8px 3px 6px; font-size: t.$fs-xs; }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex: none; }
+.dot.pulse { animation: pulse 1.6s ease-in-out infinite; }
+
+.tone-success { color: #067647; background: t.$success-bg; border-color: t.$success-border; }
+.tone-danger { color: #b42318; background: t.$danger-bg; border-color: t.$danger-border; }
+.tone-warning { color: #b54708; background: t.$warning-bg; border-color: t.$warning-border; }
+.tone-info { color: t.$primary-700; background: t.$info-bg; border-color: t.$info-border; }
+.tone-neutral { color: t.$gray-600; background: t.$neutral-bg; border-color: t.$neutral-border; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot.pulse { animation: none; }
+}

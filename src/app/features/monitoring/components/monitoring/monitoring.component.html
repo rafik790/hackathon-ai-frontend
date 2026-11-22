@@ -1,0 +1,151 @@
+<app-page-header title="Monitoring" description="Health of the agent and of the Tekton collection process.">
+  <ng-container pageActions>
+    <app-refresh-button label="Refresh" [loading]="(loading$ | async) ?? false" (refresh)="reload()"></app-refresh-button>
+  </ng-container>
+</app-page-header>
+
+<div class="page-stack">
+  <div class="inline-alert neutral">
+    <mat-icon>info</mat-icon>
+    <span>
+      These indicators are independent. <strong>Collector health</strong> describes whether execution data is being gathered from
+      Kubernetes; it says nothing about whether pipelines succeed. Pipeline outcomes are summarised under
+      <strong>Pipeline execution health</strong>.
+    </span>
+  </div>
+
+  <div class="dimensions">
+    <app-health-card *ngFor="let d of (dimensions$ | async) ?? []" [dimension]="d"></app-health-card>
+  </div>
+
+  <ng-container *ngIf="collector$ | async as collector">
+    <app-error-state *ngIf="collector.error && !collector.data" [error]="collector.error" (retry)="reload()" class="card"></app-error-state>
+
+    <div class="grid-main-side" *ngIf="collector.data as status">
+      <section class="card">
+        <header class="card-header">
+          <div>
+            <h2>Last collection cycle</h2>
+            <div class="subtitle" *ngIf="status.lastCycle as cycle">
+              Finished {{ cycle.finishedAt | relativeTime }} · {{ cycle.finishedAt | date: 'medium' }}
+            </div>
+          </div>
+          <app-status-badge
+            *ngIf="status.lastCycle as cycle"
+            [status]="cycle.successful ? 'SUCCEEDED' : 'FAILED'"
+            [label]="cycle.successful ? 'Cycle succeeded' : 'Cycle failed'"
+          ></app-status-badge>
+        </header>
+
+        <div class="card-body" *ngIf="status.lastCycle as cycle; else noCycle">
+          <div class="stat-row">
+            <div class="stat" *ngFor="let entry of cycle.discovered | keyvalue">
+              <span class="eyebrow">{{ entry.key }}s discovered</span>
+              <span class="stat-value">{{ entry.value | number }}</span>
+            </div>
+            <div class="stat">
+              <span class="eyebrow">Cycle duration</span>
+              <span class="stat-value">{{ cycle.durationMs | duration }}</span>
+            </div>
+          </div>
+
+          <div class="upserts" aria-label="Changes written in the last cycle">
+            <div><span class="dot created"></span>Created <strong>{{ cycle.created | number }}</strong></div>
+            <div><span class="dot updated"></span>Updated <strong>{{ cycle.updated | number }}</strong></div>
+            <div><span class="dot unchanged"></span>Unchanged <strong>{{ cycle.unchanged | number }}</strong></div>
+            <div><span class="dot skipped"></span>Skipped <strong>{{ cycle.skipped | number }}</strong></div>
+          </div>
+
+          <dl class="kv-grid timing">
+            <div><dt>Started</dt><dd>{{ cycle.startedAt | date: 'medium' }}</dd></div>
+            <div><dt>Finished</dt><dd>{{ cycle.finishedAt | date: 'medium' }}</dd></div>
+          </dl>
+
+          <div class="errors" *ngIf="cycle.errors.length; else noErrors">
+            <h3><mat-icon aria-hidden="true">error_outline</mat-icon> Collection errors ({{ cycle.errors.length }})</h3>
+            <ul>
+              <li *ngFor="let error of cycle.errors"><code>{{ error }}</code></li>
+            </ul>
+          </div>
+          <ng-template #noErrors>
+            <div class="no-errors"><mat-icon aria-hidden="true">task_alt</mat-icon> No collection errors in the last cycle.</div>
+          </ng-template>
+        </div>
+        <ng-template #noCycle>
+          <app-empty-state
+            icon="hourglass_empty"
+            title="No collection cycle yet"
+            [message]="status.enabled ? 'The first cycle starts shortly after the agent boots.' : 'Collection is disabled on the backend (MONITORING_ENABLED=false).'"
+          ></app-empty-state>
+        </ng-template>
+      </section>
+
+      <section class="card">
+        <header class="card-header"><h2>Collector configuration</h2></header>
+        <div class="card-body">
+          <dl class="kv-grid single">
+            <div>
+              <dt>Collection</dt>
+              <dd><app-status-badge [status]="status.enabled ? 'UP' : 'DISABLED'" [label]="status.enabled ? 'Enabled' : 'Disabled'" size="sm"></app-status-badge></dd>
+            </div>
+            <div>
+              <dt>Monitored namespaces</dt>
+              <dd class="chips">
+                <span class="ns-chip" *ngFor="let ns of status.namespaces">{{ ns }}</span>
+                <span *ngIf="!status.namespaces.length" class="text-muted">None configured</span>
+              </dd>
+            </div>
+            <div><dt>Collection interval</dt><dd>Every {{ status.pollingIntervalMs | duration }} <span class="text-muted">(after the previous cycle ends)</span></dd></div>
+            <div>
+              <dt>Last successful collection</dt>
+              <dd>
+                <ng-container *ngIf="status.lastSuccessfulCycleAt as at; else never">{{ at | date: 'medium' }} <span class="text-muted">({{ at | relativeTime }})</span></ng-container>
+                <ng-template #never><span class="text-muted">Never</span></ng-template>
+              </dd>
+            </div>
+            <div><dt>Cycles since start</dt><dd>{{ status.totalCycles | number }}</dd></div>
+            <div>
+              <dt>Consecutive failed cycles</dt>
+              <dd [class.text-danger]="status.consecutiveFailedCycles > 0">{{ status.consecutiveFailedCycles | number }}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+    </div>
+  </ng-container>
+
+  <section class="card" *ngIf="health$ | async as health">
+    <header class="card-header">
+      <div>
+        <h2>Application health components</h2>
+        <div class="subtitle">Spring Boot Actuator health indicators reported by the agent</div>
+      </div>
+      <app-status-badge *ngIf="health.data" [status]="health.data.status"></app-status-badge>
+    </header>
+    <app-loading-skeleton *ngIf="health.loading && !health.data" variant="rows" [rows]="4"></app-loading-skeleton>
+    <app-error-state *ngIf="health.error && !health.data" [error]="health.error" (retry)="reload()"></app-error-state>
+    <div class="components" *ngIf="health.data">
+      <ng-container *ngIf="(components$ | async) ?? [] as rows">
+        <div class="component" *ngFor="let row of rows">
+          <div class="component-head">
+            <code>{{ row.name }}</code>
+            <app-status-badge [status]="row.status" size="sm"></app-status-badge>
+          </div>
+          <dl *ngIf="row.details.length">
+            <ng-container *ngFor="let d of row.details">
+              <dt>{{ d.key }}</dt>
+              <dd>{{ d.value }}</dd>
+            </ng-container>
+          </dl>
+        </div>
+        <app-empty-state
+          *ngIf="!rows.length"
+          icon="visibility_off"
+          title="No component details"
+          message="The backend hides health details (HEALTH_SHOW_DETAILS=never)."
+          [compact]="true"
+        ></app-empty-state>
+      </ng-container>
+    </div>
+  </section>
+</div>

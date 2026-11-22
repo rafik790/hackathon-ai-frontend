@@ -1,0 +1,116 @@
+<div class="table-shell density-compact">
+  <mat-progress-bar *ngIf="loading && hasRows" class="progress" mode="indeterminate"></mat-progress-bar>
+
+  <app-error-state *ngIf="error && hasRows" [inline]="true" [error]="error" (retry)="retry.emit()" class="inline-error"></app-error-state>
+
+  <div class="scroll" *ngIf="hasRows; else noRows">
+    <table
+      mat-table
+      [dataSource]="rows"
+      [trackBy]="trackByIndex"
+      matSort
+      [matSortActive]="sortActive"
+      [matSortDirection]="sortDirection"
+      matSortDisableClear
+      (matSortChange)="sortChange.emit($event)"
+    >
+      <ng-container *ngFor="let col of columns" [matColumnDef]="col.key">
+        <th
+          mat-header-cell
+          *matHeaderCellDef
+          mat-sort-header
+          [disabled]="!col.sortable"
+          [class]="cellClass(col)"
+          [style.width]="col.width ?? null"
+        >
+          {{ col.header }}
+        </th>
+        <td mat-cell *matCellDef="let row" [class]="cellClass(col)" [ngSwitch]="col.kind ?? 'text'">
+          <ng-container *ngSwitchCase="'status'">
+            <app-status-badge [status]="col.value ? $any(col.value(row)) : null" size="sm"></app-status-badge>
+          </ng-container>
+          <ng-container *ngSwitchCase="'datetime'">
+            <ng-container *ngIf="col.value && col.value(row) as ts; else dash">
+              <span class="nowrap" [matTooltip]="(ts | date: 'medium') ?? ''">{{ ts | date: 'MMM d, HH:mm:ss' }}</span>
+            </ng-container>
+          </ng-container>
+          <ng-container *ngSwitchCase="'duration'">
+            <app-duration
+              *ngIf="col.duration"
+              [ms]="col.duration(row).ms"
+              [status]="col.duration(row).status"
+              [startTime]="col.duration(row).startTime"
+            ></app-duration>
+          </ng-container>
+          <ng-container *ngSwitchDefault>
+            <div class="cell-text">
+              <span [class.primary]="col.kind === 'primary'" [class.mono]="col.kind === 'mono'" [attr.title]="col.value ? col.value(row) : null">
+                {{ (col.value ? col.value(row) : null) ?? '—' }}
+              </span>
+              <span class="secondary" *ngIf="col.secondary && col.secondary(row) as sub">{{ sub }}</span>
+            </div>
+          </ng-container>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="__actions">
+        <th mat-header-cell *matHeaderCellDef class="actions-cell"><span class="cdk-visually-hidden">Actions</span></th>
+        <td mat-cell *matCellDef="let row" class="actions-cell">
+          <ng-container *ngIf="rowActions.length === 1; else menu">
+            <button
+              mat-icon-button
+              type="button"
+              [matTooltip]="rowActions[0].label"
+              [attr.aria-label]="rowActions[0].label"
+              (click)="onAction($event, rowActions[0].id, row)"
+            >
+              <mat-icon>{{ rowActions[0].icon }}</mat-icon>
+            </button>
+          </ng-container>
+          <ng-template #menu>
+            <button mat-icon-button type="button" aria-label="Row actions" [matMenuTriggerFor]="actionsMenu" (click)="$event.stopPropagation()">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #actionsMenu="matMenu" xPosition="before">
+              <button mat-menu-item type="button" *ngFor="let a of rowActions" (click)="onAction($event, a.id, row)">
+                <mat-icon>{{ a.icon }}</mat-icon><span>{{ a.label }}</span>
+              </button>
+            </mat-menu>
+          </ng-template>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns"
+        class="clickable"
+        [class.highlight]="highlight ? highlight(row) : false"
+        tabindex="0"
+        [attr.aria-label]="rowLabel(row)"
+        (click)="rowClick.emit(row)"
+        (keydown.enter)="rowClick.emit(row)"
+      ></tr>
+    </table>
+  </div>
+
+  <ng-template #noRows>
+    <app-loading-skeleton *ngIf="loading && !error" variant="rows" [rows]="6"></app-loading-skeleton>
+    <app-error-state *ngIf="error" [error]="error" (retry)="retry.emit()"></app-error-state>
+    <app-empty-state *ngIf="!loading && !error" [icon]="emptyIcon" [title]="emptyTitle" [message]="emptyMessage">
+      <ng-content select="[emptyActions]"></ng-content>
+    </app-empty-state>
+  </ng-template>
+
+  <mat-paginator
+    *ngIf="showPaginator && hasRows"
+    [length]="totalElements"
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="$any(pageSizeOptions)"
+    [showFirstLastButtons]="true"
+    (page)="pageChange.emit($event)"
+  ></mat-paginator>
+</div>
+
+<ng-template #dash><span class="text-muted">—</span></ng-template>

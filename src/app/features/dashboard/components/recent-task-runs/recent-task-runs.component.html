@@ -1,0 +1,41 @@
+<section class="card" *ngIf="state$ | async as state">
+  <header class="card-header">
+    <div>
+      <h2>Recent task runs</h2>
+      <div class="subtitle">
+        Started in the selected window
+        <ng-container *ngIf="state.data"> · {{ state.data.totalElements | number }} total</ng-container>
+      </div>
+    </div>
+    <div class="actions">
+      <a mat-button color="primary" routerLink="/task-runs" [queryParams]="filters.namespace ? { namespace: filters.namespace } : {}">
+        View all <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+      </a>
+    </div>
+  </header>
+  <ng-container *ngIf="pageRequest$ | async as page">
+    <app-data-table
+      [columns]="columns"
+      [data]="state.data?.content ?? null"
+      [totalElements]="state.data?.totalElements ?? 0"
+      [pageIndex]="page.page"
+      [pageSize]="page.size"
+      [pageSizeOptions]="[8, 20, 50]"
+      [sortActive]="page.sort"
+      [sortDirection]="page.direction"
+      [loading]="state.loading"
+      [error]="state.error"
+      [rowActions]="actions"
+      [highlight]="isFailed"
+      [rowLabel]="rowLabel"
+      emptyIcon="checklist"
+      emptyTitle="No task runs in this window"
+      emptyMessage="No TaskRuns started in the selected time range."
+      (pageChange)="onPage($event)"
+      (sortChange)="onSort($event)"
+      (rowClick)="open($event)"
+      (action)="open($event.row)"
+      (retry)="retry()"
+    ></app-data-table>
+  </ng-container>
+</section>

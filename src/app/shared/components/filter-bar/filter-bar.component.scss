@@ -1,0 +1,18 @@
+@use 'tokens' as t;
+
+:host { display: block; }
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: t.$space-3;
+}
+
+.search { flex: 1 1 220px; max-width: 320px; }
+.select { width: 180px; }
+.clear { color: t.$text-secondary; }
+
+@include t.respond-below(t.$bp-sm) {
+  .search, .select { flex: 1 1 100%; max-width: none; width: auto; }
+}

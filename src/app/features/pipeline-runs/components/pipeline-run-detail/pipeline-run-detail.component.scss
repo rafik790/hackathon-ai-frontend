@@ -1,0 +1,14 @@
+@use 'tokens' as t;
+
+.failure-panel .origin { margin: t.$space-3 0 0; font-size: t.$fs-base; color: #7a271a; }
+
+.task-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: t.$space-3;
+  font-size: t.$fs-sm;
+  color: t.$text-muted;
+  .ok { color: t.$success; }
+  .bad { color: t.$danger; font-weight: t.$fw-semibold; }
+  .run { color: t.$info; }
+}

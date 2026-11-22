@@ -1,0 +1,48 @@
+<div class="sidebar" [class.collapsed]="collapsed">
+  <a class="brand" routerLink="/overview" aria-label="CI/CD Reliability AI Agent home">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 32 32" width="32" height="32">
+        <rect width="32" height="32" rx="8" fill="#2563eb" />
+        <path d="M7 17.5h4.2l2.4-6 4 11 2.6-6.5H25" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </span>
+    <span class="brand-text" *ngIf="!collapsed">
+      <span class="name">CI/CD Reliability</span>
+      <span class="sub">AI Agent</span>
+    </span>
+  </a>
+
+  <nav class="nav" aria-label="Main navigation">
+    <div class="section-label" *ngIf="!collapsed">Workspace</div>
+    <a
+      *ngFor="let item of items"
+      class="nav-item"
+      [routerLink]="item.route"
+      routerLinkActive="active"
+      #rla="routerLinkActive"
+      [attr.aria-current]="rla.isActive ? 'page' : null"
+      [matTooltip]="item.label"
+      matTooltipPosition="right"
+      [matTooltipDisabled]="!collapsed"
+    >
+      <mat-icon aria-hidden="true">{{ item.icon }}</mat-icon>
+      <span class="label" *ngIf="!collapsed">{{ item.label }}</span>
+    </a>
+  </nav>
+
+  <div class="footer">
+    <a
+      *ngIf="health$ | async as health"
+      class="collector"
+      routerLink="/monitoring"
+      [class]="'collector state-' + health"
+      [matTooltip]="healthLabels[health]"
+      matTooltipPosition="right"
+      [matTooltipDisabled]="!collapsed"
+    >
+      <span class="dot" aria-hidden="true"></span>
+      <span *ngIf="!collapsed">{{ healthLabels[health] }}</span>
+    </a>
+    <div class="version" *ngIf="!collapsed">v{{ version }}</div>
+  </div>
+</div>

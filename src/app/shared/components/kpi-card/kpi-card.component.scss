@@ -1,0 +1,51 @@
+@use 'tokens' as t;
+
+:host { display: block; min-width: 0; }
+
+.kpi {
+  @include t.card;
+  display: flex;
+  flex-direction: column;
+  gap: t.$space-2;
+  height: 100%;
+  padding: t.$space-4 t.$space-5;
+  color: inherit;
+  text-decoration: none;
+  transition: box-shadow t.$transition-base, border-color t.$transition-base;
+}
+
+.kpi.clickable:hover { text-decoration: none; border-color: t.$border-strong; box-shadow: t.$shadow-md; }
+.kpi.clickable:focus-visible { outline: 2px solid t.$primary-200; outline-offset: 2px; }
+
+.top { display: flex; align-items: center; justify-content: space-between; gap: t.$space-2; }
+
+.label { min-width: 0; font-size: t.$fs-base; font-weight: t.$fw-medium; color: t.$text-secondary; line-height: 1.3; }
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: t.$radius-md;
+
+  .mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+
+.tone-primary { color: t.$primary-600; background: t.$primary-50; }
+.tone-success { color: t.$success; background: t.$success-bg; }
+.tone-danger { color: t.$danger; background: t.$danger-bg; }
+.tone-warning { color: t.$warning; background: t.$warning-bg; }
+.tone-info { color: t.$info; background: t.$info-bg; }
+.tone-neutral { color: t.$neutral; background: t.$neutral-bg; }
+
+.value {
+  font-size: t.$fs-3xl;
+  font-weight: t.$fw-semibold;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.caption { font-size: t.$fs-sm; color: t.$text-muted; line-height: 1.35; }

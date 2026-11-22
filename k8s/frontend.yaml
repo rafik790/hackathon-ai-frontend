@@ -1,0 +1,96 @@
+# CI/CD Reliability AI Agent - frontend.
+# Apply in the namespace where the backend (hackathon-ai-agent) runs:
+#   kubectl apply -n <agent-namespace> -f k8s/frontend.yaml
+# Then set BACKEND_URL below to the backend Service FQDN in that namespace.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hackathon-ai-frontend
+  labels:
+    app.kubernetes.io/name: hackathon-ai-frontend
+    app.kubernetes.io/part-of: cicd-reliability-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: hackathon-ai-frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: hackathon-ai-frontend
+        app.kubernetes.io/part-of: cicd-reliability-agent
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: ghcr.io/rafik790/hackathon-ai-frontend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            # Fully qualified backend Service name (nginx's resolver does not use search domains).
+            - name: BACKEND_URL
+              value: http://hackathon-ai-agent.default.svc.cluster.local:8080
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 20m, memory: 32Mi }
+            limits: { cpu: 200m, memory: 128Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            # nginx writes the rendered config, its pid file and temp files here.
+            - { name: nginx-conf, mountPath: /etc/nginx/conf.d }
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: nginx-conf, emptyDir: {} }
+        - { name: tmp, emptyDir: {} }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hackathon-ai-frontend
+  labels:
+    app.kubernetes.io/name: hackathon-ai-frontend
+spec:
+  selector:
+    app.kubernetes.io/name: hackathon-ai-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# The SPA is served from the root path. The backend keeps its own Ingress rule for /agent (the longer
+# prefix wins), and the frontend's Nginx can also proxy /agent/api, /agent/actuator, ... to it.
+# No host is set, so the rule matches any host name or (changing) public IP.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hackathon-ai-frontend
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hackathon-ai-frontend
+                port:
+                  name: http

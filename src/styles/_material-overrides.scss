@@ -1,0 +1,49 @@
+@use 'tokens' as t;
+
+// Restrained Material overrides so components blend with the design system.
+
+.mat-mdc-table {
+  background: transparent !important;
+
+  .mat-mdc-header-cell {
+    font-size: t.$fs-xs;
+    font-weight: t.$fw-semibold;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: t.$text-muted;
+    background: t.$surface-subtle;
+    border-bottom-color: t.$border;
+  }
+
+  .mat-mdc-cell {
+    font-size: t.$fs-base;
+    color: t.$text;
+    border-bottom-color: t.$gray-100;
+  }
+
+  .mat-mdc-row { transition: background-color t.$transition-fast; }
+  .mat-mdc-row.clickable { cursor: pointer; }
+  .mat-mdc-row.clickable:hover { background: t.$gray-50; }
+  .mat-mdc-row.clickable:focus-visible { outline: 2px solid t.$primary-200; outline-offset: -2px; }
+}
+
+.mat-mdc-paginator { background: transparent !important; font-size: t.$fs-sm; }
+
+.mat-mdc-form-field.compact-field .mat-mdc-form-field-subscript-wrapper { display: none; }
+
+.mat-button-toggle-group.segmented {
+  border-radius: t.$radius-md;
+  border-color: t.$border-strong;
+
+  .mat-button-toggle { font-size: t.$fs-sm; color: t.$text-secondary; }
+  .mat-button-toggle-checked { background: t.$primary-50; color: t.$primary-700; font-weight: t.$fw-semibold; }
+  .mat-button-toggle-appearance-standard .mat-button-toggle-label-content { line-height: 32px; padding: 0 12px; }
+}
+
+.mat-mdc-snack-bar-container.snack-error .mdc-snackbar__surface { border-left: 3px solid t.$danger; }
+
+.mat-mdc-menu-panel { border-radius: t.$radius-md !important; }
+
+.mat-mdc-dialog-container .mdc-dialog__surface { border-radius: t.$radius-lg !important; }
+
+.mat-mdc-slide-toggle .mdc-form-field { font-size: t.$fs-base; }
