@@ -22,9 +22,9 @@ Icons (no CDN needed inside the cluster).
 | Pipeline Runs | `/pipeline-runs` | Server-side paged, sorted and filtered list (pipeline name, status, namespace, start date range). Filters live in the query string, so views can be bookmarked and survive refresh. |
 | Pipeline Run details | `/pipeline-runs/:id` | Metadata, failure panel naming the first failing task, execution timeline with Gantt bars, task run table. |
 | Task Runs | `/task-runs` | Same list capabilities, plus task-name and PipelineRun-name filters. |
-| Task Run details | `/task-runs/:id` | Execution, metadata, failure reason and message, link to sibling TaskRuns. |
+| Task Run details | `/task-runs/:id` | Execution, metadata, failure reason and message, link to sibling TaskRuns. Failed TaskRuns also show their **Failure Analysis**: summary, root cause, category, severity, confidence, recommended actions and supporting evidence. |
 | Monitoring | `/monitoring` | Four separate dimensions — application health, Kubernetes connectivity, collector health and pipeline execution health — plus the last collection cycle, configuration and Actuator health components. |
-| Failure Analysis | `/failure-analysis` | Failure KPIs and trend, most failing pipelines and tasks, failure reasons, recent failures. |
+| Failure Analysis | `/failure-analysis` | Failure KPIs and trend, newest AI analyses, most failing pipelines and tasks, failure reasons, recent failures. |
 | Settings | `/settings` | Backend info (`/actuator/info`), monitoring configuration, resolved API URLs with a connection test, browser-local display preferences. |
 
 Shared behaviour: one refresh clock drives every page (toolbar refresh, auto-refresh 15 s – 5 min, paused while the
@@ -44,6 +44,9 @@ Every call goes to a real backend endpoint; no mock data ships with the app.
 | `GET /api/v1/pipelines/{id}` · `GET /api/v1/pipelines/{id}/tasks` | Pipeline Run details and timeline |
 | `GET /api/v1/tasks?namespace&pipelineName&pipelineRunName&taskName&status&from&to&page&size&sort` | Task Runs list, Overview recent task runs, Failure Analysis (failed tasks) |
 | `GET /api/v1/tasks/{id}` | Task Run details |
+| `GET /api/v1/tasks/{taskRunId}/analysis` | Failure Analysis of a failed TaskRun; polled while it is in progress (404 = no analysis) |
+| `GET /api/v1/failure-analyses?category&severity&status&page&size&sort` | Failure Analysis page (newest analyses) |
+| `POST /api/v1/failure-evidence/{evidenceId}/analyse` | "Analyse again" after a failed analysis, never with `force`. 202 = queued |
 | `GET /api/v1/collector/status` | Top bar and sidebar collector status, namespace filter options, Monitoring, Settings |
 | `GET /actuator/health` | Monitoring (application health and components) |
 | `GET /actuator/info` | Settings (application information) |
@@ -56,7 +59,9 @@ allow-list, `from` inclusive / `to` exclusive on start time, `ErrorResponse` bod
 
 Shown as clearly labelled placeholders, never with sample data:
 
-- AI root-cause analysis, recommended actions, failure categorisation and pattern detection.
+- Requesting the first analysis of a TaskRun: the evidence id this needs is only part of analysis responses. The agent
+  analyses recent failures by itself.
+- Detection of patterns across failures.
 - TaskRun time series (the trends endpoint covers PipelineRuns only).
 - PipelineRun / TaskRun parameters, results, labels, annotations and step details (not collected).
 - `PENDING` and `CANCELLED` states: the backend normalises to `RUNNING`, `SUCCEEDED`, `FAILED`, `UNKNOWN`
