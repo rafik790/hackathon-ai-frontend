@@ -71,12 +71,7 @@
         </app-chart-card>
       </ng-container>
 
-      <app-pending-feature
-        title="AI root-cause analysis"
-        icon="psychology"
-        description="The agent backend does not provide AI-generated analysis yet. When it does, this panel will explain failures using the collected execution history. No analysis is generated in the browser."
-        [items]="['Failure summary per PipelineRun', 'Probable root cause and failure category', 'Recommended remediation actions', 'Recurring failure patterns']"
-      ></app-pending-feature>
+      <app-recent-analyses *ngIf="analyses$ | async as analyses" [state]="analyses" (retry)="reload()"></app-recent-analyses>
     </div>
 
     <ng-container *ngIf="failures$ | async as failures">
@@ -152,10 +147,10 @@
     </ng-container>
 
     <app-pending-feature
-      title="Failure categorisation and historical patterns"
+      title="Historical patterns"
       icon="category"
-      description="The backend exposes the Tekton reason and message of each failure, but no failure categories or pattern detection. These will appear here once supported."
-      [items]="['Failure category (infrastructure, test, build, configuration)', 'Flaky task detection', 'Mean time between failures per pipeline']"
+      description="The backend analyses each failure on its own, but does not detect patterns across failures. These will appear here once supported."
+      [items]="['Flaky task detection', 'Mean time between failures per pipeline']"
       [compact]="true"
     ></app-pending-feature>
   </div>

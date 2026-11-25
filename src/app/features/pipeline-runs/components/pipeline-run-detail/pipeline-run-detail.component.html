@@ -28,6 +28,9 @@
               First failing task:
               <button type="button" class="link-button" (click)="openTask(origin)">{{ origin.taskName ?? origin.taskRunName }}</button>
               <span *ngIf="origin.failureMessage"> — {{ origin.failureMessage }}</span>
+              <a mat-stroked-button class="analysis-link" [routerLink]="['/task-runs', origin.id]">
+                <mat-icon>psychology</mat-icon> View failure analysis
+              </a>
             </p>
           </div>
         </section>

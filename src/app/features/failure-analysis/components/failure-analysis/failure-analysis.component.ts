@@ -37,6 +37,8 @@ export class FailureAnalysisComponent {
   readonly trends$ = loadOnTrigger(this.trigger$, (f) => this.analysis.trends(f)).pipe(shareReplay({ bufferSize: 1, refCount: true }));
   readonly failures$ = loadOnTrigger(this.trigger$, (f) => this.analysis.failures(f)).pipe(shareReplay({ bufferSize: 1, refCount: true }));
 
+  readonly analyses$ = loadOnTrigger(this.refresh.trigger$, () => this.analysis.recentAnalyses());
+
   readonly breakdown$ = this.failures$.pipe(map((state) => (state.data ? this.analysis.breakdown(state.data) : null)));
   readonly recent$ = this.failures$.pipe(map((state) => state.data?.pipelineRuns.slice(0, RECENT_LIMIT) ?? null));
   readonly hasFailuresInTrend$ = this.trends$.pipe(map((state) => !!state.data && state.data.points.some((p) => p.total > 0)));

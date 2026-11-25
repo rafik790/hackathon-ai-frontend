@@ -32,6 +32,8 @@
         </div>
       </section>
 
+      <app-failure-analysis-panel *ngIf="task.status === 'FAILED'" [taskRunId]="task.id"></app-failure-analysis-panel>
+
       <div class="grid-main-side">
         <section class="card">
           <header class="card-header"><h2>Execution</h2></header>

@@ -1,6 +1,7 @@
 @use 'tokens' as t;
 
 .failure-panel .origin { margin: t.$space-3 0 0; font-size: t.$fs-base; color: #7a271a; }
+.failure-panel .analysis-link { display: table; margin-top: t.$space-3; background: t.$surface; }
 
 .task-counts {
   display: flex;

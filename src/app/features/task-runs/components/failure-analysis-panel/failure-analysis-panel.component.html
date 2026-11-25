@@ -1,0 +1,78 @@
+<section class="card" id="failure-analysis" aria-labelledby="failure-analysis-title" *ngIf="state$ | async as state">
+  <header class="card-header">
+    <div class="title">
+      <mat-icon aria-hidden="true">psychology</mat-icon>
+      <div>
+        <h2 id="failure-analysis-title">Failure Analysis</h2>
+        <div class="subtitle">AI-generated explanation of this failure. Verify it before acting on it.</div>
+      </div>
+    </div>
+    <app-status-badge *ngIf="state.analysis" [status]="state.analysis.status" size="sm"></app-status-badge>
+  </header>
+
+  <div class="card-body" aria-live="polite" [attr.aria-busy]="state.loading">
+    <app-error-state *ngIf="state.error && state.analysis" class="notice" [inline]="true" [error]="state.error" (retry)="reload()"></app-error-state>
+
+    <ng-container *ngIf="state.analysis as analysis; else noAnalysis" [ngSwitch]="analysis.status">
+      <app-failure-analysis-result *ngSwitchCase="'COMPLETED'" [analysis]="analysis"></app-failure-analysis-result>
+
+      <ng-container *ngSwitchCase="'FAILED'">
+        <div class="inline-alert danger" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <div class="alert-text">
+            <strong>The analysis failed</strong> after {{ analysis.processingAttempts }}
+            {{ analysis.processingAttempts === 1 ? 'attempt' : 'attempts' }}.
+            <div class="detail" *ngIf="analysis.lastError">{{ analysis.lastError }}</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button mat-flat-button color="primary" type="button" [disabled]="state.requesting" (click)="requestAnalysis()">
+            <mat-icon>{{ state.requesting ? 'hourglass_empty' : 'replay' }}</mat-icon>
+            {{ state.requesting ? 'Requesting…' : 'Analyse again' }}
+          </button>
+        </div>
+      </ng-container>
+
+      <div *ngSwitchDefault class="progress">
+        <mat-progress-bar mode="indeterminate" aria-label="Analysis in progress"></mat-progress-bar>
+        <ng-container [ngSwitch]="analysis.status">
+          <ng-container *ngSwitchCase="'PROCESSING'">
+            <h3>Analysing the failure</h3>
+            <p>The collected evidence is being analysed. The result appears here automatically.</p>
+          </ng-container>
+          <ng-container *ngSwitchCase="'RETRY_PENDING'">
+            <h3>Waiting for another attempt</h3>
+            <p>
+              Attempt {{ analysis.processingAttempts }} did not succeed. The agent tries again
+              {{ analysis.nextAttemptAt ? 'at ' + (analysis.nextAttemptAt | date: 'mediumTime') : 'later' }}.
+            </p>
+          </ng-container>
+          <ng-container *ngSwitchDefault>
+            <h3>Analysis requested</h3>
+            <p>The analysis is queued. The result appears here automatically.</p>
+          </ng-container>
+        </ng-container>
+        <p class="detail" *ngIf="analysis.lastError">{{ analysis.lastError }}</p>
+      </div>
+    </ng-container>
+
+    <ng-template #noAnalysis>
+      <app-loading-skeleton *ngIf="state.loading && !state.missing" variant="text" [rows]="4"></app-loading-skeleton>
+      <app-error-state *ngIf="!state.loading && state.error" [error]="state.error" (retry)="reload()"></app-error-state>
+      <app-empty-state
+        *ngIf="state.missing && !state.error"
+        icon="psychology"
+        title="No analysis available"
+        message="The agent analyses recent failures automatically once their evidence has been collected. This failure has not been analysed yet, or it is too old."
+        [compact]="true"
+      >
+        <button mat-stroked-button type="button" [disabled]="state.loading" (click)="reload()"><mat-icon>refresh</mat-icon> Check again</button>
+      </app-empty-state>
+    </ng-template>
+
+    <div class="inline-alert danger notice-below" *ngIf="state.requestError as error" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <div class="alert-text"><strong>The analysis could not be requested.</strong> {{ error.message }}</div>
+    </div>
+  </div>
+</section>

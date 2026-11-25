@@ -25,6 +25,6 @@ export class StatusBadgeComponent {
   }
 
   get isRunning(): boolean {
-    return (this.status ?? '').toUpperCase() === 'RUNNING';
+    return ['RUNNING', 'PROCESSING'].includes((this.status ?? '').toUpperCase());
   }
 }

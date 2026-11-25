@@ -2,7 +2,9 @@ import { Injectable } from '@angular/core';
 import { Observable, forkJoin, map } from 'rxjs';
 import { DashboardSummary, TrendResponse } from '../../../core/models/dashboard.models';
 import { MAX_PAGE_SIZE } from '../../../core/models/execution.models';
+import { FailureAnalysisSummary } from '../../../core/models/failure-analysis.models';
 import { DashboardApiService } from '../../../core/services/dashboard-api.service';
+import { FailureAnalysisApiService } from '../../../core/services/failure-analysis-api.service';
 import { PipelineRunApiService } from '../../../core/services/pipeline-run-api.service';
 import { TaskRunApiService } from '../../../core/services/task-run-api.service';
 import { BarItem } from '../../../shared/charts/bar-list-chart.component';
@@ -10,11 +12,12 @@ import { rangeStart } from '../../../shared/execution/list-query';
 import { FailureBreakdown, FailureFilters, FailureSample } from '../models/failure-analysis.models';
 
 const TOP_N = 6;
+const RECENT_ANALYSES = 4;
 
 /**
  * Failure analysis from the data the backend actually exposes: aggregate counts and trends from
- * the dashboard endpoints, and failure reasons from the most recent failed executions.
- * No AI analysis is produced here; the backend does not offer it yet.
+ * the dashboard endpoints, failure reasons from the most recent failed executions, and the newest AI
+ * analyses. No analysis is produced in the browser.
  */
 @Injectable()
 export class FailureAnalysisService {
@@ -22,6 +25,7 @@ export class FailureAnalysisService {
     private readonly dashboardApi: DashboardApiService,
     private readonly pipelineApi: PipelineRunApiService,
     private readonly taskApi: TaskRunApiService,
+    private readonly analysisApi: FailureAnalysisApiService,
   ) {}
 
   summary(filters: FailureFilters): Observable<DashboardSummary> {
@@ -47,6 +51,13 @@ export class FailureAnalysisService {
         taskRunTotal: tasks.totalElements,
       })),
     );
+  }
+
+  /** The API has no namespace or time filter for analyses. */
+  recentAnalyses(): Observable<readonly FailureAnalysisSummary[]> {
+    return this.analysisApi
+      .list({}, { page: 0, size: RECENT_ANALYSES, sort: 'createdAt', direction: 'desc' })
+      .pipe(map((page) => page.content));
   }
 
   breakdown(sample: FailureSample): FailureBreakdown {

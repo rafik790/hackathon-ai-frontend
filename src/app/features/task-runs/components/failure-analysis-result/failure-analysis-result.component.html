@@ -1,0 +1,79 @@
+<div class="overview">
+  <div class="conclusion">
+    <p class="summary">{{ analysis.summary }}</p>
+    <div class="root-cause">
+      <h3>Root cause</h3>
+      <p>{{ analysis.rootCause }}</p>
+    </div>
+  </div>
+
+  <dl class="ratings">
+    <div>
+      <dt>Category</dt>
+      <dd class="category">{{ category }}</dd>
+    </div>
+    <div>
+      <dt>Severity</dt>
+      <dd><app-level-badge [level]="analysis.severity" name="Severity"></app-level-badge></dd>
+    </div>
+    <div *ngIf="analysis.confidence !== null">
+      <dt>Confidence</dt>
+      <dd>
+        <span class="confidence">{{ confidencePercent }}% <span class="text-muted" *ngIf="analysis.confidenceLevel">· {{ confidenceLabel }}</span></span>
+        <span
+          [class]="'meter level-' + (analysis.confidenceLevel ?? 'LOW').toLowerCase()"
+          role="meter"
+          aria-label="Confidence"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="confidencePercent"
+        >
+          <span [style.width.%]="confidencePercent"></span>
+        </span>
+      </dd>
+    </div>
+  </dl>
+</div>
+
+<section class="block" *ngIf="analysis.recommendedActions?.length" aria-label="Recommended actions">
+  <h3>Recommended actions</h3>
+  <ol class="recommendations">
+    <li *ngFor="let item of analysis.recommendedActions" [class]="'priority-' + item.priority.toLowerCase()">
+      <app-level-badge [level]="item.priority" name="Priority"></app-level-badge>
+      <div class="text">
+        <p class="action">{{ item.action }}</p>
+        <p class="reason">{{ item.reason }}</p>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<section class="block" *ngIf="analysis.supportingEvidence?.length" aria-label="Supporting evidence">
+  <h3>Supporting evidence</h3>
+  <ul class="evidence">
+    <li *ngFor="let item of analysis.supportingEvidence">
+      <div class="origin">
+        <mat-icon aria-hidden="true">{{ source(item.source).icon }}</mat-icon>
+        <span>{{ source(item.source).label }}</span>
+        <code *ngIf="item.containerName">{{ item.containerName }}</code>
+      </div>
+      <pre [class.log]="isLog(item)" tabindex="0">{{ item.observation }}</pre>
+    </li>
+  </ul>
+</section>
+
+<div class="block details" *ngIf="detailLists.length">
+  <details *ngFor="let list of detailLists">
+    <summary><mat-icon aria-hidden="true">{{ list.icon }}</mat-icon>{{ list.title }} ({{ list.items.length }})<mat-icon class="chevron" aria-hidden="true">expand_more</mat-icon></summary>
+    <ul class="plain">
+      <li *ngFor="let item of list.items">{{ item }}</li>
+    </ul>
+  </details>
+</div>
+
+<p class="footer">
+  <span *ngIf="analysis.analysedAt">Analysed {{ analysis.analysedAt | date: 'medium' }}</span>
+  <span *ngIf="analysis.model">Model {{ analysis.model }}</span>
+  <span *ngIf="analysis.attempt > 0">TaskRun attempt {{ analysis.attempt + 1 }}</span>
+  <span *ngIf="analysis.revision > 0">Revision {{ analysis.revision }}</span>
+</p>

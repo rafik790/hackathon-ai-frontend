@@ -1,0 +1,24 @@
+@use 'tokens' as t;
+
+:host { display: block; min-width: 0; }
+
+.title {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$space-3;
+  > .mat-icon { color: t.$primary-600; flex: none; }
+}
+
+.notice { display: block; margin-bottom: t.$space-4; }
+.notice-below { margin-top: t.$space-4; }
+
+.alert-text { min-width: 0; }
+.detail { margin-top: t.$space-1; font-size: t.$fs-sm; overflow-wrap: anywhere; }
+
+.actions { margin-top: t.$space-4; }
+
+.progress {
+  h3 { margin-top: t.$space-4; font-size: t.$fs-md; }
+  p { margin: t.$space-1 0 0; color: t.$text-secondary; font-size: t.$fs-base; }
+  p.detail { color: t.$text-muted; font-size: t.$fs-sm; }
+}
