@@ -5,7 +5,7 @@
         <app-status-badge pageTitleSuffix [status]="run.status"></app-status-badge>
         <ng-container pageMeta>
           <span class="meta-item"><mat-icon aria-hidden="true">folder_open</mat-icon><code>{{ run.namespace }}</code></span>
-          <span class="meta-item" *ngIf="run.startTime"><mat-icon aria-hidden="true">play_circle</mat-icon>Started {{ run.startTime | date: 'MMM d, y, HH:mm:ss' }}</span>
+          <span class="meta-item" *ngIf="run.startTime"><mat-icon aria-hidden="true">play_circle</mat-icon>Started {{ run.startTime | relativeTime }}</span>
           <span class="meta-item"><mat-icon aria-hidden="true">timer</mat-icon><app-duration [ms]="run.durationMs" [status]="run.status" [startTime]="run.startTime"></app-duration></span>
         </ng-container>
         <ng-container pageActions>
@@ -40,7 +40,7 @@
             <header class="card-header">
               <div>
                 <h2>Execution timeline</h2>
-                <div class="subtitle">TaskRuns in start order; bars show when each task ran within the pipeline.</div>
+                <div class="subtitle">Tasks in start order. Open a task to see its details and failure analysis.</div>
               </div>
               <div class="task-counts" *ngIf="taskSummary$ | async as ts">
                 <span>{{ ts.total }} tasks</span>
@@ -73,59 +73,30 @@
             <header class="card-header"><h2>Details</h2></header>
             <div class="card-body">
               <dl class="kv-grid single">
-                <div><dt>PipelineRun</dt><dd class="mono">{{ run.pipelineRunName }}</dd></div>
                 <div><dt>Pipeline</dt><dd>{{ run.pipelineName ?? '—' }}</dd></div>
-                <div><dt>Namespace</dt><dd class="mono">{{ run.namespace }}</dd></div>
-                <div>
-                  <dt>UID</dt>
-                  <dd class="uid">
-                    <span class="mono">{{ run.pipelineRunUid }}</span>
-                    <button mat-icon-button type="button" [appCopyToClipboard]="run.pipelineRunUid" copyLabel="UID" aria-label="Copy UID" matTooltip="Copy UID">
-                      <mat-icon>content_copy</mat-icon>
-                    </button>
-                  </dd>
-                </div>
-                <div><dt>Status</dt><dd><app-status-badge [status]="run.status" size="sm"></app-status-badge></dd></div>
                 <div><dt>Started</dt><dd>{{ (run.startTime | date: 'medium') ?? '—' }}</dd></div>
                 <div><dt>Completed</dt><dd>{{ (run.completionTime | date: 'medium') ?? '—' }}</dd></div>
-                <div><dt>Duration</dt><dd><app-duration [ms]="run.durationMs" [status]="run.status" [startTime]="run.startTime"></app-duration></dd></div>
-                <div><dt>Resource created</dt><dd>{{ (run.resourceCreatedAt | date: 'medium') ?? '—' }}</dd></div>
-                <div><dt>First collected</dt><dd>{{ (run.createdAt | date: 'medium') ?? '—' }}</dd></div>
-                <div><dt>Last updated</dt><dd>{{ (run.updatedAt | date: 'medium') ?? '—' }}</dd></div>
-                <div *ngIf="run.failureReason"><dt>Failure reason</dt><dd>{{ run.failureReason }}</dd></div>
               </dl>
+              <details class="tech-details">
+                <summary><mat-icon aria-hidden="true">chevron_right</mat-icon>Identifiers and collection times</summary>
+                <dl class="kv-grid single">
+                  <div>
+                    <dt>UID</dt>
+                    <dd class="uid">
+                      <span class="mono">{{ run.pipelineRunUid }}</span>
+                      <button mat-icon-button type="button" [appCopyToClipboard]="run.pipelineRunUid" copyLabel="UID" aria-label="Copy UID" matTooltip="Copy UID">
+                        <mat-icon>content_copy</mat-icon>
+                      </button>
+                    </dd>
+                  </div>
+                  <div><dt>Resource created</dt><dd>{{ (run.resourceCreatedAt | date: 'medium') ?? '—' }}</dd></div>
+                  <div><dt>First collected</dt><dd>{{ (run.createdAt | date: 'medium') ?? '—' }}</dd></div>
+                  <div><dt>Last updated</dt><dd>{{ (run.updatedAt | date: 'medium') ?? '—' }}</dd></div>
+                </dl>
+              </details>
             </div>
           </section>
         </div>
-
-        <section class="card">
-          <header class="card-header">
-            <div>
-              <h2>Task runs</h2>
-              <div class="subtitle">Ordered by start time</div>
-            </div>
-          </header>
-          <app-data-table
-            [columns]="taskColumns"
-            [data]="detail.tasks"
-            [showPaginator]="false"
-            [loading]="state.loading"
-            [highlight]="isFailed"
-            [rowLabel]="taskRowLabel"
-            emptyIcon="checklist"
-            emptyTitle="No task runs collected"
-            emptyMessage="No TaskRuns are stored for this PipelineRun."
-            (rowClick)="openTask($event)"
-          ></app-data-table>
-        </section>
-
-        <app-pending-feature
-          title="Parameters, labels and annotations"
-          icon="data_object"
-          description="The backend stores normalized execution metadata only. PipelineRun parameters, labels, annotations and results are not collected yet."
-          [items]="['Pipeline parameters', 'Kubernetes labels and annotations', 'Pipeline results']"
-          [compact]="true"
-        ></app-pending-feature>
       </div>
     </ng-container>
   </ng-container>

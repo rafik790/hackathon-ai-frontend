@@ -141,6 +141,7 @@ p { margin: 0; overflow-wrap: anywhere; }
   margin-top: t.$space-5;
   font-size: t.$fs-sm;
   color: t.$text-muted;
+  .analysed { color: t.$text-secondary; font-weight: t.$fw-medium; }
 }
 
 @include t.respond-below(t.$bp-md) {

@@ -7,10 +7,29 @@
         <div class="subtitle">AI-generated explanation of this failure. Verify it before acting on it.</div>
       </div>
     </div>
-    <app-status-badge *ngIf="state.analysis" [status]="state.analysis.status" size="sm"></app-status-badge>
+    <div class="header-actions" *ngIf="state.analysis as analysis">
+      <span class="revision" *ngIf="analysis.revision > 0">Revision {{ analysis.revision }}</span>
+      <app-status-badge [status]="analysis.status" size="sm"></app-status-badge>
+      <button
+        *ngIf="analysis.status === 'COMPLETED'"
+        mat-stroked-button
+        type="button"
+        [disabled]="state.requesting"
+        (click)="reanalyse()"
+        matTooltip="Run the AI analysis again for this failure"
+      >
+        <mat-icon>{{ state.requesting ? 'hourglass_empty' : 'autorenew' }}</mat-icon>
+        {{ state.requesting ? 'Requesting…' : 'Re-analyse' }}
+      </button>
+    </div>
   </header>
 
   <div class="card-body" aria-live="polite" [attr.aria-busy]="state.loading">
+    <!-- Next to the button that caused it, above a possibly long analysis. -->
+    <div class="inline-alert danger notice" *ngIf="state.requestError as error" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <div class="alert-text"><strong>{{ requestErrorTitle(error) }}</strong> {{ error.message }}</div>
+    </div>
     <app-error-state *ngIf="state.error && state.analysis" class="notice" [inline]="true" [error]="state.error" (retry)="reload()"></app-error-state>
 
     <ng-container *ngIf="state.analysis as analysis; else noAnalysis" [ngSwitch]="analysis.status">
@@ -70,9 +89,5 @@
       </app-empty-state>
     </ng-template>
 
-    <div class="inline-alert danger notice-below" *ngIf="state.requestError as error" role="alert">
-      <mat-icon aria-hidden="true">error_outline</mat-icon>
-      <div class="alert-text"><strong>The analysis could not be requested.</strong> {{ error.message }}</div>
-    </div>
   </div>
 </section>

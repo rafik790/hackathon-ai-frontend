@@ -1,13 +1,12 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, distinctUntilChanged, map, shareReplay } from 'rxjs';
-import { TIME_RANGE_PRESETS, TimeRangePreset, parseTimeRangePreset } from '../../../../core/models/dashboard.models';
-import { PipelineRun } from '../../../../core/models/execution.models';
+import { TimeRangePreset, parseTimeRangePreset } from '../../../../core/models/dashboard.models';
+import { TaskRun } from '../../../../core/models/execution.models';
 import { loadOnTrigger } from '../../../../core/models/load-state';
 import { CollectorStatusStore } from '../../../../core/services/collector-status.store';
 import { PreferencesService } from '../../../../core/services/preferences.service';
 import { RefreshService } from '../../../../core/services/refresh.service';
-import { CHART_COLORS } from '../../../../shared/charts/chart-theme';
 import { TableColumn } from '../../../../shared/components/data-table/data-table.models';
 import { FailureFilters } from '../../models/failure-analysis.models';
 import { FailureAnalysisService } from '../../services/failure-analysis.service';
@@ -34,33 +33,29 @@ export class FailureAnalysisComponent {
   private readonly trigger$ = combineLatest([this.filters$, this.refresh.trigger$]).pipe(map(([filters]) => filters));
 
   readonly summary$ = loadOnTrigger(this.trigger$, (f) => this.analysis.summary(f)).pipe(shareReplay({ bufferSize: 1, refCount: true }));
-  readonly trends$ = loadOnTrigger(this.trigger$, (f) => this.analysis.trends(f)).pipe(shareReplay({ bufferSize: 1, refCount: true }));
   readonly failures$ = loadOnTrigger(this.trigger$, (f) => this.analysis.failures(f)).pipe(shareReplay({ bufferSize: 1, refCount: true }));
 
-  readonly analyses$ = loadOnTrigger(this.refresh.trigger$, () => this.analysis.recentAnalyses());
+  readonly analyses$ = loadOnTrigger(this.refresh.trigger$, () => this.analysis.recentAnalyses()).pipe(
+    shareReplay({ bufferSize: 1, refCount: true }),
+  );
+  readonly recentAnalyses$ = this.analyses$.pipe(map((state) => ({ ...state, data: state.data?.items ?? null })));
 
   readonly breakdown$ = this.failures$.pipe(map((state) => (state.data ? this.analysis.breakdown(state.data) : null)));
-  readonly recent$ = this.failures$.pipe(map((state) => state.data?.pipelineRuns.slice(0, RECENT_LIMIT) ?? null));
-  readonly hasFailuresInTrend$ = this.trends$.pipe(map((state) => !!state.data && state.data.points.some((p) => p.total > 0)));
+  readonly recent$ = this.failures$.pipe(map((state) => state.data?.taskRuns.slice(0, RECENT_LIMIT) ?? null));
   readonly namespaces$ = this.collector.namespaces$;
 
-  readonly presets = TIME_RANGE_PRESETS;
-  readonly dangerColor = CHART_COLORS.danger;
-  readonly warningColor = CHART_COLORS.warning;
-  readonly neutralColor = '#64748b';
 
-  readonly recentColumns: TableColumn<PipelineRun>[] = [
-    { key: 'pipelineRunName', header: 'Pipeline run', kind: 'primary', value: (r) => r.pipelineRunName, secondary: (r) => r.pipelineName },
-    { key: 'namespace', header: 'Namespace', kind: 'mono', value: (r) => r.namespace, hideBelow: 'md' },
-    { key: 'failureReason', header: 'Failure', value: (r) => r.failureReason ?? 'Failed', secondary: (r) => r.failureMessage },
-    { key: 'startTime', header: 'Started', kind: 'datetime', value: (r) => r.startTime },
+  readonly recentColumns: TableColumn<TaskRun>[] = [
     {
-      key: 'durationMs',
-      header: 'Duration',
-      kind: 'duration',
-      duration: (r) => ({ ms: r.durationMs, status: r.status, startTime: r.startTime }),
-      hideBelow: 'md',
+      key: 'taskRunName',
+      header: 'Task run',
+      kind: 'primary',
+      value: (t) => t.taskName ?? t.taskRunName,
+      secondary: (t) => t.pipelineRunName ?? t.taskRunName,
     },
+    { key: 'failureReason', header: 'Failure', value: (t) => t.failureReason ?? 'Failed', secondary: (t) => t.failureMessage },
+    { key: 'namespace', header: 'Namespace', kind: 'mono', value: (t) => t.namespace, hideBelow: 'lg' },
+    { key: 'startTime', header: 'Started', kind: 'datetime', value: (t) => t.startTime },
   ];
 
   constructor(
@@ -80,19 +75,15 @@ export class FailureAnalysisComponent {
     this.updateQuery({ namespace });
   }
 
-  openRun(run: PipelineRun): void {
-    void this.router.navigate(['/pipeline-runs', run.id]);
+  openTask(task: TaskRun): void {
+    void this.router.navigate(['/task-runs', task.id]);
   }
 
   reload(): void {
     this.refresh.refresh();
   }
 
-  rangeLabel(range: TimeRangePreset): string {
-    return this.presets.find((p) => p.value === range)?.label ?? range;
-  }
-
-  readonly rowLabel = (run: PipelineRun): string => `Open failed PipelineRun ${run.pipelineRunName}`;
+  readonly rowLabel = (task: TaskRun): string => `Open the failure analysis of TaskRun ${task.taskRunName}`;
 
   private updateQuery(params: Partial<Record<'range' | 'namespace', string | null>>): void {
     void this.router.navigate([], { relativeTo: this.route, queryParams: params, queryParamsHandling: 'merge', replaceUrl: true });

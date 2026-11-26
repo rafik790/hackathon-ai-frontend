@@ -5,7 +5,6 @@ import { TaskRun } from '../../../../core/models/execution.models';
 import { loadOnTrigger } from '../../../../core/models/load-state';
 import { RefreshService } from '../../../../core/services/refresh.service';
 import { BreadcrumbService } from '../../../../layout/services/breadcrumb.service';
-import { isFailed, taskRunColumns } from '../../../../shared/execution/execution-columns';
 import { PipelineRunDetail, PipelineRunsService } from '../../services/pipeline-runs.service';
 
 export interface TaskSummary {
@@ -24,9 +23,6 @@ export interface TaskSummary {
   styleUrls: ['./pipeline-run-detail.component.scss'],
 })
 export class PipelineRunDetailComponent {
-  readonly taskColumns = taskRunColumns().filter((c) => c.key !== 'namespace');
-  readonly isFailed = isFailed;
-
   private readonly id$ = this.route.paramMap.pipe(
     map((params) => Number(params.get('id'))),
     distinctUntilChanged(),
@@ -57,8 +53,6 @@ export class PipelineRunDetailComponent {
   reload(): void {
     this.refresh.refresh();
   }
-
-  readonly taskRowLabel = (task: TaskRun): string => `Open TaskRun ${task.taskRunName}`;
 }
 
 function summarize(detail: PipelineRunDetail | null): TaskSummary | null {

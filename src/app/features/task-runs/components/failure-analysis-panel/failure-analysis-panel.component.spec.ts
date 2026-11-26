@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Subject, of, throwError } from 'rxjs';
 import { ApiError } from '../../../../core/models/api-error.model';
@@ -13,10 +14,15 @@ import { FailureAnalysisPanelComponent } from './failure-analysis-panel.componen
 
 describe('FailureAnalysisPanelComponent', () => {
   let api: jasmine.SpyObj<FailureAnalysisApiService>;
+  let dialog: jasmine.SpyObj<MatDialog>;
+  let confirmed: boolean;
   let fixture: ComponentFixture<FailureAnalysisPanelComponent>;
 
   beforeEach(() => {
     api = jasmine.createSpyObj<FailureAnalysisApiService>('api', ['latestOfTaskRun', 'request']);
+    confirmed = false;
+    dialog = jasmine.createSpyObj<MatDialog>('dialog', ['open']);
+    dialog.open.and.callFake((() => ({ afterClosed: () => of(confirmed) })) as unknown as MatDialog['open']);
     TestBed.configureTestingModule({
       declarations: [FailureAnalysisPanelComponent, FailureAnalysisResultComponent],
       imports: [SharedModule, FailureAnalysisUiModule, NoopAnimationsModule],
@@ -25,6 +31,7 @@ describe('FailureAnalysisPanelComponent', () => {
         { provide: RefreshService, useValue: { ticks$: new Subject<void>() } },
       ],
     });
+    TestBed.overrideComponent(FailureAnalysisPanelComponent, { add: { providers: [{ provide: MatDialog, useValue: dialog }] } });
   });
 
   afterEach(() => fixture.destroy());
@@ -68,8 +75,41 @@ describe('FailureAnalysisPanelComponent', () => {
     expect(element.querySelectorAll('.evidence pre.log').length).toBe(1);
   });
 
-  it('does not offer to replace a completed analysis', () => {
-    expect(texts(render(COMPILATION_ANALYSIS), 'button')).toEqual([]);
+  const button = (element: HTMLElement, label: string): HTMLButtonElement | undefined =>
+    Array.from(element.querySelectorAll<HTMLButtonElement>('button')).find((b) => b.textContent?.includes(label));
+
+  it('re-analyses a completed analysis only after confirmation', () => {
+    const element = render({ ...COMPILATION_ANALYSIS, revision: 2 });
+    expect(texts(element, 'button')).toEqual(['autorenew Re-analyse']);
+    expect(text(element, '.revision')).toBe('Revision 2');
+
+    button(element, 'Re-analyse')?.click();
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    expect(api.request).not.toHaveBeenCalled();
+
+    confirmed = true;
+    api.request.and.returnValue(of(unfinishedAnalysis('PENDING', { id: 9, revision: 3 })));
+    button(element, 'Re-analyse')?.click();
+    fixture.detectChanges();
+    expect(api.request).toHaveBeenCalledOnceWith(2, true);
+    expect(text(element, '.progress h3')).toBe('Analysis requested');
+    expect(button(element, 'Re-analyse')).toBeUndefined();
+  });
+
+  it('explains why re-analysis was rejected and keeps the result', () => {
+    const element = render(COMPILATION_ANALYSIS);
+    confirmed = true;
+    api.request.and.returnValue(throwError(() => error(429, 'The daily AI quota of 100 invocations is exhausted')));
+    button(element, 'Re-analyse')?.click();
+    fixture.detectChanges();
+
+    expect(text(element, '.inline-alert.notice')).toContain('The daily AI analysis quota is used up.');
+    expect(text(element, '.inline-alert.notice')).toContain('The daily AI quota of 100 invocations is exhausted');
+    expect(text(element, '.summary')).toBe(COMPILATION_ANALYSIS.summary ?? '');
+  });
+
+  it('offers no request while no analysis exists', () => {
+    expect(texts(render(null), 'button')).toEqual(['refresh Check again']);
   });
 
   it('shows an empty state when there is no analysis', () => {
@@ -99,7 +139,8 @@ describe('FailureAnalysisPanelComponent', () => {
     api.request.and.returnValue(of(unfinishedAnalysis('PENDING', { id: 9 })));
     element.querySelector<HTMLButtonElement>('button')?.click();
     fixture.detectChanges();
-    expect(api.request).toHaveBeenCalledOnceWith(2);
+    expect(api.request).toHaveBeenCalledOnceWith(2, false);
+    expect(dialog.open).not.toHaveBeenCalled();
     expect(text(element, '.progress h3')).toBe('Analysis requested');
   });
 
@@ -109,7 +150,8 @@ describe('FailureAnalysisPanelComponent', () => {
     element.querySelector<HTMLButtonElement>('button')?.click();
     fixture.detectChanges();
 
-    expect(text(element, '.notice-below')).toContain('AI analysis is disabled');
+    expect(text(element, '.inline-alert.notice')).toContain('The analysis cannot be requested right now.');
+    expect(text(element, '.inline-alert.notice')).toContain('AI analysis is disabled');
   });
 
   it('shows texts as text', () => {

@@ -13,7 +13,7 @@ import { failureCategoryLabel } from '../../../../shared/failure-analysis/failur
       <header class="card-header">
         <div>
           <h2>AI failure analyses</h2>
-          <div class="subtitle">Newest analyses of all namespaces</div>
+          <div class="subtitle">Newest first, of all namespaces</div>
         </div>
       </header>
       <app-error-state *ngIf="state.error && state.data" class="notice" [inline]="true" [error]="state.error" (retry)="retry.emit()"></app-error-state>

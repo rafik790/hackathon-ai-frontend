@@ -4,29 +4,6 @@
 
 .meta-link:hover { text-decoration: none; }
 
-.metric-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.metric {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: t.$space-4 t.$space-5;
-  border-left: 1px solid t.$border;
-  &:first-child { border-left: 0; }
-}
-
-.metric-value { font-size: t.$fs-xl; font-weight: t.$fw-semibold; font-variant-numeric: tabular-nums; }
-.metric-hint { font-size: t.$fs-xs; color: t.$text-muted; }
-
-@include t.respond-below(t.$bp-md) {
-  .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .metric:nth-child(3) { border-left: 0; }
-  .metric:nth-child(n + 3) { border-top: 1px solid t.$border; }
-}
-
 @include t.respond-below(t.$bp-sm) {
   .ns-field { width: 100%; }
 }

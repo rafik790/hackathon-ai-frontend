@@ -3,7 +3,7 @@ import { AppEnvironment } from '../../../../environments/environment.model';
 import { APP_CONFIG } from '../../../core/config/app-config';
 import { CollectorStatusStore } from '../../../core/services/collector-status.store';
 import { COLLECTOR_HEALTH_LABELS } from '../../../core/utils/collector-health';
-import { NAV_ITEMS } from '../../navigation';
+import { NAV_GROUPS } from '../../navigation';
 
 @Component({
   selector: 'app-sidebar',
@@ -15,7 +15,7 @@ import { NAV_ITEMS } from '../../navigation';
 export class SidebarComponent {
   @Input() collapsed = false;
 
-  readonly items = NAV_ITEMS;
+  readonly groups = NAV_GROUPS;
   readonly health$ = this.collector.health$;
   readonly healthLabels = COLLECTOR_HEALTH_LABELS;
   readonly version: string;

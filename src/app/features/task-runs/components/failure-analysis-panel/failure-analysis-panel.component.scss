@@ -9,8 +9,16 @@
   > .mat-icon { color: t.$primary-600; flex: none; }
 }
 
-.notice { display: block; margin-bottom: t.$space-4; }
-.notice-below { margin-top: t.$space-4; }
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: t.$space-2 t.$space-3;
+}
+.revision { font-size: t.$fs-sm; color: t.$text-muted; }
+
+.notice { display: flex; margin-bottom: t.$space-4; }
+app-error-state.notice { display: block; }
 
 .alert-text { min-width: 0; }
 .detail { margin-top: t.$space-1; font-size: t.$fs-sm; overflow-wrap: anywhere; }

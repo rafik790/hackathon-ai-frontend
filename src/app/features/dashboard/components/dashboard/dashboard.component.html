@@ -1,5 +1,5 @@
 <ng-container *ngIf="filters$ | async as filters">
-  <app-page-header title="Overview" description="CI/CD pipeline reliability and execution health.">
+  <app-page-header title="Overview" description="Pipeline health at a glance. Open a failed run to see which task failed and why.">
     <ng-container pageMeta>
       <ng-container *ngIf="collector$ | async as collector">
         <a class="meta-link" routerLink="/monitoring" matTooltip="State of the Tekton collector, not of your pipelines">
@@ -8,13 +8,7 @@
         <span class="meta-item" *ngIf="collector.data?.lastSuccessfulCycleAt as lastAt" [matTooltip]="(lastAt | date: 'medium') ?? ''">
           <mat-icon aria-hidden="true">history</mat-icon> Last collection {{ lastAt | relativeTime }}
         </span>
-        <span class="meta-item" *ngIf="collector.data && !collector.data.lastSuccessfulCycleAt">
-          <mat-icon aria-hidden="true">history</mat-icon> No successful collection yet
-        </span>
       </ng-container>
-      <span class="meta-item" *ngIf="(summary$ | async)?.data as s">
-        <mat-icon aria-hidden="true">date_range</mat-icon> {{ s.from | date: 'MMM d, HH:mm' }} – {{ s.to | date: 'MMM d, HH:mm' }}
-      </span>
     </ng-container>
 
     <ng-container pageActions>
@@ -34,7 +28,7 @@
     <ng-container *ngIf="summary$ | async as summary">
       <app-error-state *ngIf="summary.error" [inline]="true" [error]="summary.error" (retry)="reload()"></app-error-state>
 
-      <div class="kpi-grid six" aria-label="Key metrics">
+      <div class="kpi-grid" aria-label="Key metrics">
         <app-kpi-card
           *ngFor="let kpi of (kpis$ | async) ?? []"
           [label]="kpi.label"
@@ -47,107 +41,23 @@
           [linkQueryParams]="kpi.queryParams"
         ></app-kpi-card>
       </div>
-
-      <section class="card metric-strip" *ngIf="summary.data as s" aria-label="Duration metrics">
-        <div class="metric">
-          <span class="eyebrow">Success rate</span>
-          <span class="metric-value">{{ s.successfulExecutions + s.failedExecutions ? (s.successRate | number: '1.1-1') + '%' : '—' }}</span>
-          <span class="metric-hint">of completed pipeline runs</span>
-        </div>
-        <div class="metric">
-          <span class="eyebrow">Average duration</span>
-          <span class="metric-value">{{ s.averageDurationMs | duration }}</span>
-          <span class="metric-hint">completed pipeline runs</span>
-        </div>
-        <div class="metric">
-          <span class="eyebrow">P95 duration</span>
-          <span class="metric-value">{{ s.p95DurationMs | duration }}</span>
-          <span class="metric-hint">95th percentile</span>
-        </div>
-        <div class="metric">
-          <span class="eyebrow">Task failure rate</span>
-          <span class="metric-value">{{ s.taskFailureRate | number: '1.1-1' }}%</span>
-          <span class="metric-hint">{{ s.failedTaskRuns | number }} of {{ s.totalTaskRuns | number }} task runs</span>
-        </div>
-      </section>
     </ng-container>
 
-    <div class="grid-main-side">
-      <ng-container *ngIf="trends$ | async as trends">
-        <app-chart-card
-          title="Pipeline execution trend"
-          [subtitle]="'PipelineRuns per ' + (trends.data?.granularity === 'HOUR' ? 'hour' : 'day') + ' by status · ' + rangeLabel(filters.range)"
-          [loading]="trends.loading"
-          [error]="trends.error"
-          [hasData]="(hasTrendData$ | async) ?? false"
-          [height]="280"
-          footnote="Buckets are aligned to UTC and shown in your local time."
-          (retry)="reload()"
-        >
-          <app-execution-trend-chart [trend]="trends.data"></app-execution-trend-chart>
-        </app-chart-card>
-      </ng-container>
-
-      <ng-container *ngIf="outcome$ | async as outcome">
-        <app-chart-card
-          title="Success vs failure"
-          subtitle="Completed pipeline runs"
-          [loading]="(summary$ | async)?.loading ?? false"
-          [error]="(summary$ | async)?.error ?? null"
-          [hasData]="outcome.completed > 0"
-          [height]="280"
-          emptyTitle="No completed runs"
-          emptyMessage="Success and failure are measured on completed PipelineRuns only."
-          (retry)="reload()"
-        >
-          <app-doughnut-chart
-            [segments]="outcome.segments"
-            [centerValue]="outcome.rate"
-            centerLabel="Success rate"
-            ariaLabel="Succeeded versus failed pipeline runs"
-          ></app-doughnut-chart>
-        </app-chart-card>
-      </ng-container>
-    </div>
-
-    <div class="grid-3">
-      <ng-container *ngIf="trends$ | async as trends">
-        <app-chart-card
-          title="Failure trend"
-          subtitle="Failed runs and success rate over time"
-          [loading]="trends.loading"
-          [error]="trends.error"
-          [hasData]="(hasTrendData$ | async) ?? false"
-          [height]="240"
-          (retry)="reload()"
-        >
-          <app-failure-trend-chart [trend]="trends.data"></app-failure-trend-chart>
-        </app-chart-card>
-      </ng-container>
-
-      <ng-container *ngIf="summary$ | async as summary">
-        <app-chart-card
-          title="Status distribution"
-          subtitle="All pipeline runs in the window"
-          [loading]="summary.loading"
-          [error]="summary.error"
-          [hasData]="(summary.data?.totalExecutions ?? 0) > 0"
-          [height]="240"
-          (retry)="reload()"
-        >
-          <app-bar-list-chart [items]="(distribution$ | async) ?? []" valueLabel="PipelineRuns" ariaLabel="Pipeline status distribution"></app-bar-list-chart>
-        </app-chart-card>
-      </ng-container>
-
-      <app-pending-feature
-        title="Task execution trend"
-        icon="stacked_line_chart"
-        description="The backend currently provides trends for PipelineRuns only (GET /api/v1/dashboard/trends). A TaskRun time series is not exposed yet."
-        [items]="['TaskRuns per hour/day by status', 'Task failure rate over time']"
-      ></app-pending-feature>
-    </div>
+    <ng-container *ngIf="trends$ | async as trends">
+      <app-chart-card
+        title="Pipeline runs over time"
+        [subtitle]="'Per ' + (trends.data?.granularity === 'HOUR' ? 'hour' : 'day') + ' by status · ' + rangeLabel(filters.range)"
+        [loading]="trends.loading"
+        [error]="trends.error"
+        [hasData]="(hasTrendData$ | async) ?? false"
+        [height]="260"
+        footnote="Buckets are aligned to UTC and shown in your local time."
+        (retry)="reload()"
+      >
+        <app-execution-trend-chart [trend]="trends.data"></app-execution-trend-chart>
+      </app-chart-card>
+    </ng-container>
 
     <app-recent-pipeline-runs [filters]="filters"></app-recent-pipeline-runs>
-    <app-recent-task-runs [filters]="filters"></app-recent-task-runs>
   </div>
 </ng-container>

@@ -15,7 +15,6 @@ import { FilterBarComponent } from './components/filter-bar/filter-bar.component
 import { KpiCardComponent } from './components/kpi-card/kpi-card.component';
 import { LoadingSkeletonComponent } from './components/loading-skeleton/loading-skeleton.component';
 import { PageHeaderComponent } from './components/page-header/page-header.component';
-import { PendingFeatureComponent } from './components/pending-feature/pending-feature.component';
 import { RefreshButtonComponent } from './components/refresh-button/refresh-button.component';
 import { StatusBadgeComponent } from './components/status-badge/status-badge.component';
 import { TimeRangeSelectorComponent } from './components/time-range-selector/time-range-selector.component';
@@ -39,7 +38,6 @@ const COMPONENTS = [
   KpiCardComponent,
   LoadingSkeletonComponent,
   PageHeaderComponent,
-  PendingFeatureComponent,
   RefreshButtonComponent,
   StatusBadgeComponent,
   TimeRangeSelectorComponent,

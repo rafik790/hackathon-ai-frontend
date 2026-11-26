@@ -7,13 +7,13 @@ import { PageRequest, PipelineRun, PipelineRunSortField } from '../../../../core
 import { loadOnTrigger } from '../../../../core/models/load-state';
 import { RefreshService } from '../../../../core/services/refresh.service';
 import { RowActionEvent } from '../../../../shared/components/data-table/data-table.models';
-import { OPEN_DETAILS_ACTION, VIEW_TASKS_ACTION, isFailed, pipelineRunColumns } from '../../../../shared/execution/execution-columns';
+import { OPEN_DETAILS_ACTION, VIEW_TASKS_ACTION, pipelineRunColumns } from '../../../../shared/execution/execution-columns';
 import { DashboardFilters } from '../../models/dashboard-view.models';
 import { DashboardService } from '../../services/dashboard.service';
 
-const SORTABLE: readonly PipelineRunSortField[] = ['pipelineRunName', 'pipelineName', 'namespace', 'status', 'startTime', 'completionTime', 'durationMs'];
+const SORTABLE: readonly PipelineRunSortField[] = ['pipelineRunName', 'pipelineName', 'namespace', 'startTime', 'completionTime', 'durationMs'];
 
-/** Recent PipelineRuns inside the Overview window, with server-side paging and sorting. */
+/** Recent failed PipelineRuns inside the Overview window, with server-side paging and sorting. */
 @Component({
   selector: 'app-recent-pipeline-runs',
   standalone: false,
@@ -23,16 +23,18 @@ const SORTABLE: readonly PipelineRunSortField[] = ['pipelineRunName', 'pipelineN
 export class RecentPipelineRunsComponent implements OnChanges {
   @Input({ required: true }) filters!: DashboardFilters;
 
-  readonly columns = pipelineRunColumns({ compact: true });
+  // Every row has failed: the reason says more than the status.
+  readonly columns = pipelineRunColumns({ compact: true }).map((c) =>
+    c.key === 'status' ? { key: 'failureReason', header: 'Failure', value: (r: PipelineRun) => r.failureReason ?? 'Failed', secondary: (r: PipelineRun) => r.failureMessage } : c,
+  );
   readonly actions = [OPEN_DETAILS_ACTION, VIEW_TASKS_ACTION];
-  readonly isFailed = isFailed;
 
   private readonly filters$ = new BehaviorSubject<DashboardFilters | null>(null);
   private readonly page$ = new BehaviorSubject<PageRequest<PipelineRunSortField>>({ page: 0, size: 8, sort: 'startTime', direction: 'desc' });
 
   readonly state$ = loadOnTrigger(
     combineLatest([this.filters$, this.page$, this.refresh.trigger$]).pipe(map(([filters, page]) => ({ filters, page }))),
-    ({ filters, page }) => this.dashboard.recentPipelineRuns(filters ?? { range: '7d', namespace: null }, page),
+    ({ filters, page }) => this.dashboard.recentFailedPipelineRuns(filters ?? { range: '7d', namespace: null }, page),
   );
   readonly pageRequest$ = this.page$.asObservable();
 
@@ -70,5 +72,5 @@ export class RecentPipelineRunsComponent implements OnChanges {
     this.refresh.refresh();
   }
 
-  readonly rowLabel = (run: PipelineRun): string => `Open PipelineRun ${run.pipelineRunName}`;
+  readonly rowLabel = (run: PipelineRun): string => `Open failed PipelineRun ${run.pipelineRunName}`;
 }

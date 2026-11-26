@@ -18,13 +18,13 @@ Icons (no CDN needed inside the cluster).
 
 | Page | Route | What it shows |
 |---|---|---|
-| Overview | `/overview` | KPI cards, success rate / average / P95 duration, execution trend, success vs failure, failure trend, status distribution, recent pipeline and task runs. Time range (24h/7d/30d) and namespace are in the URL. |
+| Overview | `/overview` | Success rate, failed pipeline and task runs, average duration, the execution trend and the recent failed pipeline runs. Time range (24h/7d/30d) and namespace are in the URL. |
 | Pipeline Runs | `/pipeline-runs` | Server-side paged, sorted and filtered list (pipeline name, status, namespace, start date range). Filters live in the query string, so views can be bookmarked and survive refresh. |
-| Pipeline Run details | `/pipeline-runs/:id` | Metadata, failure panel naming the first failing task, execution timeline with Gantt bars, task run table. |
+| Pipeline Run details | `/pipeline-runs/:id` | Failure panel naming the first failing task with a link to its analysis, execution timeline with Gantt bars, details. |
 | Task Runs | `/task-runs` | Same list capabilities, plus task-name and PipelineRun-name filters. |
-| Task Run details | `/task-runs/:id` | Execution, metadata, failure reason and message, link to sibling TaskRuns. Failed TaskRuns also show their **Failure Analysis**: summary, root cause, category, severity, confidence, recommended actions and supporting evidence. |
+| Task Run details | `/task-runs/:id` | Failure reason and message, details, link to the other tasks of the run. Failed TaskRuns also show their **Failure Analysis**: summary, root cause, category, severity, confidence, recommended actions and supporting evidence, and can be analysed again. |
 | Monitoring | `/monitoring` | Four separate dimensions — application health, Kubernetes connectivity, collector health and pipeline execution health — plus the last collection cycle, configuration and Actuator health components. |
-| Failure Analysis | `/failure-analysis` | Failure KPIs and trend, newest AI analyses, most failing pipelines and tasks, failure reasons, recent failures. |
+| Failure Analysis | `/failure-analysis` | Failed task runs, the most failing task and failure reason, recent failed task runs and the newest AI analyses. |
 | Settings | `/settings` | Backend info (`/actuator/info`), monitoring configuration, resolved API URLs with a connection test, browser-local display preferences. |
 
 Shared behaviour: one refresh clock drives every page (toolbar refresh, auto-refresh 15 s – 5 min, paused while the
@@ -38,15 +38,15 @@ Every call goes to a real backend endpoint; no mock data ships with the app.
 
 | Endpoint | Used by |
 |---|---|
-| `GET /api/v1/dashboard/summary?range&namespace` | Overview KPIs and duration metrics, Failure Analysis KPIs, Monitoring (pipeline health, last 24 h) |
-| `GET /api/v1/dashboard/trends?range&namespace` | Overview execution and failure trends, Failure Analysis trend |
-| `GET /api/v1/pipelines?namespace&pipelineName&status&from&to&page&size&sort` | Pipeline Runs list, Overview recent runs, Failure Analysis (failed runs) |
+| `GET /api/v1/dashboard/summary?range&namespace` | Overview KPIs, Failure Analysis KPIs, Monitoring (pipeline health, last 24 h) |
+| `GET /api/v1/dashboard/trends?range&namespace` | Overview execution trend |
+| `GET /api/v1/pipelines?namespace&pipelineName&status&from&to&page&size&sort` | Pipeline Runs list, Overview recent failures |
 | `GET /api/v1/pipelines/{id}` · `GET /api/v1/pipelines/{id}/tasks` | Pipeline Run details and timeline |
-| `GET /api/v1/tasks?namespace&pipelineName&pipelineRunName&taskName&status&from&to&page&size&sort` | Task Runs list, Overview recent task runs, Failure Analysis (failed tasks) |
+| `GET /api/v1/tasks?namespace&pipelineName&pipelineRunName&taskName&status&from&to&page&size&sort` | Task Runs list, Failure Analysis (failed tasks) |
 | `GET /api/v1/tasks/{id}` | Task Run details |
 | `GET /api/v1/tasks/{taskRunId}/analysis` | Failure Analysis of a failed TaskRun; polled while it is in progress (404 = no analysis) |
-| `GET /api/v1/failure-analyses?category&severity&status&page&size&sort` | Failure Analysis page (newest analyses) |
-| `POST /api/v1/failure-evidence/{evidenceId}/analyse` | "Analyse again" after a failed analysis, never with `force`. 202 = queued |
+| `GET /api/v1/failure-analyses?category&severity&status&page&size&sort` | Failure Analysis page (newest analyses and their number) |
+| `POST /api/v1/failure-evidence/{evidenceId}/analyse[?force=true]` | "Analyse again" after a failed analysis; "Re-analyse" of a completed one with `force=true` after a confirmation (new revision, uses AI quota). 202 = queued, 409/429 shown with the backend's message |
 | `GET /api/v1/collector/status` | Top bar and sidebar collector status, namespace filter options, Monitoring, Settings |
 | `GET /actuator/health` | Monitoring (application health and components) |
 | `GET /actuator/info` | Settings (application information) |
@@ -55,21 +55,16 @@ Conventions followed: zero-based `page`, `size` capped at 100, `sort=<property>,
 allow-list, `from` inclusive / `to` exclusive on start time, `ErrorResponse` bodies mapped to typed errors by
 `HttpErrorInterceptor`. Name filters are **exact matches** in the backend, and the UI says so.
 
-### Awaiting backend support
+### Not supported by the backend
 
-Shown as clearly labelled placeholders, never with sample data:
+Not shown in the UI:
 
 - Requesting the first analysis of a TaskRun: the evidence id this needs is only part of analysis responses. The agent
   analyses recent failures by itself.
-- Detection of patterns across failures.
-- TaskRun time series (the trends endpoint covers PipelineRuns only).
-- PipelineRun / TaskRun parameters, results, labels, annotations and step details (not collected).
-- `PENDING` and `CANCELLED` states: the backend normalises to `RUNNING`, `SUCCEEDED`, `FAILED`, `UNKNOWN`
-  (the status badge already supports the extra states).
-- Partial-text search (the backend filters by exact name).
-- Notifications and user/profile menu (the backend has no authentication).
+- Patterns across failures, a TaskRun time series, and TaskRun / PipelineRun parameters, results, labels and annotations.
+- Partial-text search (the backend filters by exact name), notifications and user accounts.
 
-Failure breakdowns are computed from the 100 most recent failed PipelineRuns and TaskRuns in the window (one API
+The most failing task and failure reason are computed from the 100 most recent failed TaskRuns in the window (one API
 page); the page says so when more failures exist.
 
 ## Project structure

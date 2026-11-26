@@ -13,6 +13,6 @@ export interface KpiView {
   readonly icon: string;
   readonly tone: StatusTone | 'primary';
   readonly caption: string | null;
-  readonly link: string;
+  readonly link: string | null;
   readonly queryParams: Record<string, string> | null;
 }

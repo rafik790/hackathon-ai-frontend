@@ -14,7 +14,7 @@
           routerLink="/task-runs"
           [queryParams]="{ pipelineRunName: task.pipelineRunName, namespace: task.namespace }"
         >
-          <mat-icon>checklist</mat-icon> Sibling task runs
+          <mat-icon>checklist</mat-icon> Other tasks of this run
         </a>
         <app-refresh-button [loading]="state.loading" (refresh)="reload()"></app-refresh-button>
       </ng-container>
@@ -34,32 +34,21 @@
 
       <app-failure-analysis-panel *ngIf="task.status === 'FAILED'" [taskRunId]="task.id"></app-failure-analysis-panel>
 
-      <div class="grid-main-side">
-        <section class="card">
-          <header class="card-header"><h2>Execution</h2></header>
-          <div class="card-body">
+      <section class="card">
+        <header class="card-header"><h2>Details</h2></header>
+        <div class="card-body">
+          <dl class="kv-grid">
+            <div><dt>Task</dt><dd>{{ task.taskName ?? '—' }}</dd></div>
+            <div><dt>Pipeline</dt><dd>{{ task.pipelineName ?? '—' }}</dd></div>
+            <div><dt>PipelineRun</dt><dd class="mono">{{ task.pipelineRunName ?? 'Standalone TaskRun' }}</dd></div>
+            <div><dt>Started</dt><dd>{{ (task.startTime | date: 'medium') ?? '—' }}</dd></div>
+            <div><dt>Completed</dt><dd>{{ (task.completionTime | date: 'medium') ?? '—' }}</dd></div>
+          </dl>
+          <details class="tech-details">
+            <summary><mat-icon aria-hidden="true">chevron_right</mat-icon>Identifiers and collection times</summary>
             <dl class="kv-grid">
-              <div><dt>Status</dt><dd><app-status-badge [status]="task.status" size="sm"></app-status-badge></dd></div>
-              <div><dt>Started</dt><dd>{{ (task.startTime | date: 'medium') ?? '—' }}</dd></div>
-              <div><dt>Completed</dt><dd>{{ (task.completionTime | date: 'medium') ?? '—' }}</dd></div>
-              <div><dt>Duration</dt><dd><app-duration [ms]="task.durationMs" [status]="task.status" [startTime]="task.startTime"></app-duration></dd></div>
-              <div *ngIf="task.failureReason"><dt>Failure reason</dt><dd>{{ task.failureReason }}</dd></div>
-              <div><dt>Resource created</dt><dd>{{ (task.resourceCreatedAt | date: 'medium') ?? '—' }}</dd></div>
-              <div><dt>First collected</dt><dd>{{ (task.createdAt | date: 'medium') ?? '—' }}</dd></div>
-              <div><dt>Last updated</dt><dd>{{ (task.updatedAt | date: 'medium') ?? '—' }}</dd></div>
-            </dl>
-          </div>
-        </section>
-
-        <section class="card">
-          <header class="card-header"><h2>Metadata</h2></header>
-          <div class="card-body">
-            <dl class="kv-grid single">
-              <div><dt>TaskRun</dt><dd class="mono">{{ task.taskRunName }}</dd></div>
-              <div><dt>Task</dt><dd>{{ task.taskName ?? '—' }}</dd></div>
-              <div><dt>Namespace</dt><dd class="mono">{{ task.namespace }}</dd></div>
               <div>
-                <dt>UID</dt>
+                <dt>TaskRun UID</dt>
                 <dd class="uid">
                   <span class="mono">{{ task.taskRunUid }}</span>
                   <button mat-icon-button type="button" [appCopyToClipboard]="task.taskRunUid" copyLabel="UID" aria-label="Copy UID" matTooltip="Copy UID">
@@ -67,21 +56,14 @@
                   </button>
                 </dd>
               </div>
-              <div><dt>Pipeline</dt><dd>{{ task.pipelineName ?? '—' }}</dd></div>
-              <div><dt>PipelineRun</dt><dd class="mono">{{ task.pipelineRunName ?? 'Standalone TaskRun' }}</dd></div>
               <div *ngIf="task.pipelineRunUid"><dt>PipelineRun UID</dt><dd class="mono small">{{ task.pipelineRunUid }}</dd></div>
+              <div><dt>Resource created</dt><dd>{{ (task.resourceCreatedAt | date: 'medium') ?? '—' }}</dd></div>
+              <div><dt>First collected</dt><dd>{{ (task.createdAt | date: 'medium') ?? '—' }}</dd></div>
+              <div><dt>Last updated</dt><dd>{{ (task.updatedAt | date: 'medium') ?? '—' }}</dd></div>
             </dl>
-          </div>
-        </section>
-      </div>
-
-      <app-pending-feature
-        title="Parameters, results and step logs"
-        icon="data_object"
-        description="The backend stores normalized execution metadata only. TaskRun parameters, results and step-level details are not collected yet."
-        [items]="['Task parameters', 'Task results', 'Step states and container exit codes']"
-        [compact]="true"
-      ></app-pending-feature>
+          </details>
+        </div>
+      </section>
     </div>
   </ng-container>
 

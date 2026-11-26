@@ -118,6 +118,28 @@
   pre { font-family: t.$font-mono; white-space: pre-wrap; word-break: break-word; }
 }
 
+// Collapsed block for identifiers and bookkeeping timestamps on detail pages.
+.tech-details {
+  margin-top: t.$space-4;
+  border-top: 1px solid t.$border;
+  summary {
+    display: flex;
+    align-items: center;
+    gap: t.$space-1;
+    padding-top: t.$space-3;
+    font-size: t.$fs-sm;
+    color: t.$text-muted;
+    cursor: pointer;
+    list-style: none;
+    &::-webkit-details-marker { display: none; }
+    &:hover { color: t.$text-secondary; }
+    .mat-icon { font-size: 18px; width: 18px; height: 18px; transition: transform t.$transition-fast; }
+  }
+  &[open] summary .mat-icon { transform: rotate(90deg); }
+  .kv-grid { margin-top: t.$space-3; }
+  dd { font-size: t.$fs-sm; }
+}
+
 // Identifier with a copy button.
 .uid {
   display: flex;

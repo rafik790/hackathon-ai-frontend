@@ -1,5 +1,5 @@
 <ng-container *ngIf="filters$ | async as filters">
-  <app-page-header title="Failure Analysis" description="Where and why pipeline executions fail.">
+  <app-page-header title="Failure Analysis" description="Recent failures and what the AI analysis says about them. Open a task run to investigate it.">
     <ng-container pageActions>
       <mat-form-field appearance="outline" class="compact-field ns-field density-compact">
         <mat-label>Namespace</mat-label>
@@ -14,144 +14,83 @@
   </app-page-header>
 
   <div class="page-stack">
-    <ng-container *ngIf="summary$ | async as summary">
-      <app-error-state *ngIf="summary.error" [inline]="true" [error]="summary.error" (retry)="reload()"></app-error-state>
-      <div class="kpi-grid">
-        <app-kpi-card
-          label="Failed pipeline runs"
-          icon="cancel"
-          tone="danger"
-          [loading]="summary.loading"
-          [value]="summary.data ? (summary.data.failedExecutions | number) : null"
-          [caption]="summary.data ? 'of ' + (summary.data.totalExecutions | number) + ' pipeline runs' : null"
-          link="/pipeline-runs"
-          [linkQueryParams]="filters.namespace ? { status: 'failed', namespace: filters.namespace } : { status: 'failed' }"
-        ></app-kpi-card>
-        <app-kpi-card
-          label="Pipeline failure rate"
-          icon="percent"
-          tone="danger"
-          [loading]="summary.loading"
-          [value]="summary.data ? (summary.data.failureRate | number: '1.1-1') + '%' : null"
-          caption="of completed pipeline runs"
-        ></app-kpi-card>
+    <ng-container *ngIf="{ summary: summary$ | async, breakdown: breakdown$ | async, topTask: (breakdown$ | async)?.byTask?.[0] ?? null, topReason: (breakdown$ | async)?.byReason?.[0] ?? null, failures: failures$ | async, analyses: analyses$ | async } as view">
+      <app-error-state *ngIf="view.summary?.error" [inline]="true" [error]="view.summary?.error ?? null" (retry)="reload()"></app-error-state>
+
+      <div class="kpi-grid" aria-label="Failure overview">
         <app-kpi-card
           label="Failed task runs"
           icon="report"
-          tone="warning"
-          [loading]="summary.loading"
-          [value]="summary.data ? (summary.data.failedTaskRuns | number) : null"
-          [caption]="summary.data ? 'of ' + (summary.data.totalTaskRuns | number) + ' task runs' : null"
+          tone="danger"
+          [loading]="view.summary?.loading ?? true"
+          [value]="view.summary?.data ? (view.summary?.data?.failedTaskRuns | number) : null"
+          [caption]="view.summary?.data ? (view.summary?.data?.taskFailureRate | number: '1.1-1') + '% of task runs in this window' : null"
           link="/task-runs"
           [linkQueryParams]="filters.namespace ? { status: 'failed', namespace: filters.namespace } : { status: 'failed' }"
         ></app-kpi-card>
         <app-kpi-card
-          label="Task failure rate"
-          icon="percent"
+          label="Most failing task"
+          icon="checklist"
           tone="warning"
-          [loading]="summary.loading"
-          [value]="summary.data ? (summary.data.taskFailureRate | number: '1.1-1') + '%' : null"
-          caption="of task runs in the window"
+          [textValue]="true"
+          [loading]="view.failures?.loading ?? true"
+          [value]="view.breakdown ? (view.topTask?.label ?? '—') : null"
+          [caption]="view.topTask ? 'failed ' + view.topTask.value + ' times' : null"
+        ></app-kpi-card>
+        <app-kpi-card
+          label="Most common failure reason"
+          icon="error_outline"
+          tone="neutral"
+          [textValue]="true"
+          [loading]="view.failures?.loading ?? true"
+          [value]="view.breakdown ? (view.topReason?.label ?? '—') : null"
+          [caption]="view.topReason ? 'reported by ' + view.topReason.value + ' task runs' : null"
+        ></app-kpi-card>
+        <app-kpi-card
+          label="AI analyses"
+          icon="psychology"
+          tone="primary"
+          [loading]="view.analyses?.loading ?? true"
+          [value]="view.analyses?.data ? (view.analyses?.data?.total | number) : null"
+          caption="of all namespaces and times"
         ></app-kpi-card>
       </div>
+
+      <div class="sample-note" *ngIf="view.breakdown?.truncated">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        Task and reason use the {{ view.breakdown?.sampledTaskRuns }} most recent failed task runs of this window.
+      </div>
+
+      <div class="grid-main-side">
+        <section class="card">
+          <header class="card-header">
+            <div>
+              <h2>Recent failed task runs</h2>
+              <div class="subtitle">Open one to see its failure analysis</div>
+            </div>
+            <div class="actions">
+              <a mat-button color="primary" routerLink="/task-runs" [queryParams]="filters.namespace ? { status: 'failed', namespace: filters.namespace } : { status: 'failed' }">
+                All failed task runs <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+              </a>
+            </div>
+          </header>
+          <app-data-table
+            [columns]="recentColumns"
+            [data]="recent$ | async"
+            [showPaginator]="false"
+            [loading]="view.failures?.loading ?? true"
+            [error]="view.failures?.error ?? null"
+            [rowLabel]="rowLabel"
+            emptyIcon="verified"
+            emptyTitle="No failures in this window"
+            emptyMessage="No TaskRun failed in the selected time range."
+            (rowClick)="openTask($event)"
+            (retry)="reload()"
+          ></app-data-table>
+        </section>
+
+        <app-recent-analyses *ngIf="recentAnalyses$ | async as analyses" [state]="analyses" (retry)="reload()"></app-recent-analyses>
+      </div>
     </ng-container>
-
-    <div class="grid-main-side">
-      <ng-container *ngIf="trends$ | async as trends">
-        <app-chart-card
-          title="Failure trend"
-          [subtitle]="'Failed pipeline runs and success rate · ' + rangeLabel(filters.range)"
-          [loading]="trends.loading"
-          [error]="trends.error"
-          [hasData]="(hasFailuresInTrend$ | async) ?? false"
-          [height]="280"
-          (retry)="reload()"
-        >
-          <app-failure-trend-chart [trend]="trends.data"></app-failure-trend-chart>
-        </app-chart-card>
-      </ng-container>
-
-      <app-recent-analyses *ngIf="analyses$ | async as analyses" [state]="analyses" (retry)="reload()"></app-recent-analyses>
-    </div>
-
-    <ng-container *ngIf="failures$ | async as failures">
-      <app-error-state *ngIf="failures.error && !failures.data" [error]="failures.error" (retry)="reload()" class="card"></app-error-state>
-
-      <ng-container *ngIf="breakdown$ | async as breakdown">
-        <div class="sample-note" *ngIf="breakdown.truncated">
-          <mat-icon aria-hidden="true">info</mat-icon>
-          Breakdowns use the {{ breakdown.sampledPipelineRuns }} most recent failed pipeline runs and {{ breakdown.sampledTaskRuns }} most
-          recent failed task runs in this window (the API returns at most 100 per request).
-        </div>
-
-        <div class="grid-3">
-          <app-chart-card
-            title="Most failing pipelines"
-            subtitle="Failed PipelineRuns by pipeline"
-            [hasData]="breakdown.byPipeline.length > 0"
-            [height]="220"
-            emptyTitle="No failed pipeline runs"
-            emptyMessage="No PipelineRun failed in this window."
-          >
-            <app-bar-list-chart [items]="breakdown.byPipeline" [color]="dangerColor" valueLabel="Failed runs" ariaLabel="Failures by pipeline"></app-bar-list-chart>
-          </app-chart-card>
-          <app-chart-card
-            title="Most failing tasks"
-            subtitle="Failed TaskRuns by task"
-            [hasData]="breakdown.byTask.length > 0"
-            [height]="220"
-            emptyTitle="No failed task runs"
-            emptyMessage="No TaskRun failed in this window."
-          >
-            <app-bar-list-chart [items]="breakdown.byTask" [color]="warningColor" valueLabel="Failed runs" ariaLabel="Failures by task"></app-bar-list-chart>
-          </app-chart-card>
-          <app-chart-card
-            title="Failure reasons"
-            subtitle="Tekton reason reported by failed TaskRuns"
-            [hasData]="breakdown.byReason.length > 0"
-            [height]="220"
-            emptyTitle="No failure reasons"
-            emptyMessage="No failed TaskRun reported a reason in this window."
-          >
-            <app-bar-list-chart [items]="breakdown.byReason" [color]="neutralColor" valueLabel="TaskRuns" ariaLabel="Failure reasons"></app-bar-list-chart>
-          </app-chart-card>
-        </div>
-      </ng-container>
-
-      <section class="card">
-        <header class="card-header">
-          <div>
-            <h2>Recent failures</h2>
-            <div class="subtitle">Latest failed pipeline runs with the reason reported by Tekton</div>
-          </div>
-          <div class="actions">
-            <a mat-button color="primary" routerLink="/pipeline-runs" [queryParams]="filters.namespace ? { status: 'failed', namespace: filters.namespace } : { status: 'failed' }">
-              All failed runs <mat-icon iconPositionEnd>arrow_forward</mat-icon>
-            </a>
-          </div>
-        </header>
-        <app-data-table
-          [columns]="recentColumns"
-          [data]="recent$ | async"
-          [showPaginator]="false"
-          [loading]="failures.loading"
-          [error]="failures.data ? failures.error : null"
-          [rowLabel]="rowLabel"
-          emptyIcon="verified"
-          emptyTitle="No failures in this window"
-          emptyMessage="Every completed PipelineRun in the selected time range succeeded."
-          (rowClick)="openRun($event)"
-          (retry)="reload()"
-        ></app-data-table>
-      </section>
-    </ng-container>
-
-    <app-pending-feature
-      title="Historical patterns"
-      icon="category"
-      description="The backend analyses each failure on its own, but does not detect patterns across failures. These will appear here once supported."
-      [items]="['Flaky task detection', 'Mean time between failures per pipeline']"
-      [compact]="true"
-    ></app-pending-feature>
   </div>
 </ng-container>

@@ -17,6 +17,8 @@ export class KpiCardComponent {
   /** Secondary line, e.g. "87.2% success rate". */
   @Input() caption: string | null = null;
   @Input() loading = false;
+  /** For a name rather than a number. */
+  @Input() textValue = false;
   /** Optional router link making the whole card navigable. */
   @Input() link: string | null = null;
   @Input() linkQueryParams: Record<string, string> | null = null;

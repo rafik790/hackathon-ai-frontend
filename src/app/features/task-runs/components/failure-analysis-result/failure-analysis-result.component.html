@@ -72,7 +72,7 @@
 </div>
 
 <p class="footer">
-  <span *ngIf="analysis.analysedAt">Analysed {{ analysis.analysedAt | date: 'medium' }}</span>
+  <span *ngIf="analysis.analysedAt" class="analysed">Analysed {{ analysis.analysedAt | date: 'medium' }}</span>
   <span *ngIf="analysis.model">Model {{ analysis.model }}</span>
   <span *ngIf="analysis.attempt > 0">TaskRun attempt {{ analysis.attempt + 1 }}</span>
   <span *ngIf="analysis.revision > 0">Revision {{ analysis.revision }}</span>

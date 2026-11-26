@@ -45,9 +45,13 @@ export class FailureAnalysisApiService {
 
   /**
    * Queues an analysis. The 202 response is the queued analysis, which is processed later. 409 when it cannot be
-   * requested, 429 when the daily AI quota is exhausted. Completed evidence is never analysed again (`force`).
+   * requested, 429 when the daily AI quota is exhausted.
+   *
+   * @param force analyse evidence again although it was analysed; creates a new revision and uses AI quota
    */
-  request(failureEvidenceId: number): Observable<FailureAnalysis> {
-    return this.http.post<FailureAnalysis>(joinUrl(this.baseUrl, `failure-evidence/${failureEvidenceId}/analyse`), null);
+  request(failureEvidenceId: number, force = false): Observable<FailureAnalysis> {
+    return this.http.post<FailureAnalysis>(joinUrl(this.baseUrl, `failure-evidence/${failureEvidenceId}/analyse`), null, {
+      params: toHttpParams({ force: force ? true : null }),
+    });
   }
 }

@@ -1,29 +1,24 @@
 import { Injectable } from '@angular/core';
-import { Observable, forkJoin, map } from 'rxjs';
-import { DashboardSummary, TrendResponse } from '../../../core/models/dashboard.models';
+import { Observable, map } from 'rxjs';
+import { DashboardSummary } from '../../../core/models/dashboard.models';
 import { MAX_PAGE_SIZE } from '../../../core/models/execution.models';
-import { FailureAnalysisSummary } from '../../../core/models/failure-analysis.models';
 import { DashboardApiService } from '../../../core/services/dashboard-api.service';
 import { FailureAnalysisApiService } from '../../../core/services/failure-analysis-api.service';
-import { PipelineRunApiService } from '../../../core/services/pipeline-run-api.service';
 import { TaskRunApiService } from '../../../core/services/task-run-api.service';
-import { BarItem } from '../../../shared/charts/bar-list-chart.component';
 import { rangeStart } from '../../../shared/execution/list-query';
-import { FailureBreakdown, FailureFilters, FailureSample } from '../models/failure-analysis.models';
+import { CountItem, FailureBreakdown, FailureFilters, FailureSample, RecentAnalyses } from '../models/failure-analysis.models';
 
 const TOP_N = 6;
-const RECENT_ANALYSES = 4;
+const RECENT_ANALYSES = 5;
 
 /**
- * Failure analysis from the data the backend actually exposes: aggregate counts and trends from
- * the dashboard endpoints, failure reasons from the most recent failed executions, and the newest AI
- * analyses. No analysis is produced in the browser.
+ * Failures of a time window from the data the backend exposes: counts from the dashboard summary, the most recent
+ * failed TaskRuns, and the newest AI analyses. No analysis is produced in the browser.
  */
 @Injectable()
 export class FailureAnalysisService {
   constructor(
     private readonly dashboardApi: DashboardApiService,
-    private readonly pipelineApi: PipelineRunApiService,
     private readonly taskApi: TaskRunApiService,
     private readonly analysisApi: FailureAnalysisApiService,
   ) {}
@@ -32,47 +27,34 @@ export class FailureAnalysisService {
     return this.dashboardApi.summary(filters);
   }
 
-  trends(filters: FailureFilters): Observable<TrendResponse> {
-    return this.dashboardApi.trends(filters);
-  }
-
-  /** Most recent failed PipelineRuns and TaskRuns in the window (one page of up to 100 each). */
+  /** Most recent failed TaskRuns in the window (one page of up to 100). */
   failures(filters: FailureFilters): Observable<FailureSample> {
-    const filter = { namespace: filters.namespace, status: 'FAILED' as const, from: rangeStart(filters.range) };
-    const page = { page: 0, size: MAX_PAGE_SIZE, direction: 'desc' as const };
-    return forkJoin({
-      pipelines: this.pipelineApi.list(filter, { ...page, sort: 'startTime' }),
-      tasks: this.taskApi.list(filter, { ...page, sort: 'startTime' }),
-    }).pipe(
-      map(({ pipelines, tasks }) => ({
-        pipelineRuns: pipelines.content,
-        pipelineRunTotal: pipelines.totalElements,
-        taskRuns: tasks.content,
-        taskRunTotal: tasks.totalElements,
-      })),
-    );
+    return this.taskApi
+      .list(
+        { namespace: filters.namespace, status: 'FAILED', from: rangeStart(filters.range) },
+        { page: 0, size: MAX_PAGE_SIZE, sort: 'startTime', direction: 'desc' },
+      )
+      .pipe(map((page) => ({ taskRuns: page.content, taskRunTotal: page.totalElements })));
   }
 
   /** The API has no namespace or time filter for analyses. */
-  recentAnalyses(): Observable<readonly FailureAnalysisSummary[]> {
+  recentAnalyses(): Observable<RecentAnalyses> {
     return this.analysisApi
       .list({}, { page: 0, size: RECENT_ANALYSES, sort: 'createdAt', direction: 'desc' })
-      .pipe(map((page) => page.content));
+      .pipe(map((page) => ({ items: page.content, total: page.totalElements })));
   }
 
   breakdown(sample: FailureSample): FailureBreakdown {
     return {
-      byPipeline: topCounts(sample.pipelineRuns.map((r) => r.pipelineName ?? '(no pipeline name)')),
       byTask: topCounts(sample.taskRuns.map((t) => t.taskName ?? t.taskRunName)),
       byReason: topCounts(sample.taskRuns.map((t) => t.failureReason || 'No reason reported')),
-      truncated: sample.pipelineRunTotal > sample.pipelineRuns.length || sample.taskRunTotal > sample.taskRuns.length,
-      sampledPipelineRuns: sample.pipelineRuns.length,
+      truncated: sample.taskRunTotal > sample.taskRuns.length,
       sampledTaskRuns: sample.taskRuns.length,
     };
   }
 }
 
-export function topCounts(values: readonly string[], limit = TOP_N): BarItem[] {
+export function topCounts(values: readonly string[], limit = TOP_N): CountItem[] {
   const counts = new Map<string, number>();
   for (const value of values) {
     counts.set(value, (counts.get(value) ?? 0) + 1);

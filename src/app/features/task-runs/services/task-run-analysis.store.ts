@@ -19,7 +19,7 @@ import {
   timer,
 } from 'rxjs';
 import { ApiError } from '../../../core/models/api-error.model';
-import { FailureAnalysis, isAnalysisInProgress } from '../../../core/models/failure-analysis.models';
+import { AnalysisStatus, FailureAnalysis, isAnalysisInProgress } from '../../../core/models/failure-analysis.models';
 import { toApiError } from '../../../core/models/load-state';
 import { FailureAnalysisApiService } from '../../../core/services/failure-analysis-api.service';
 import { RefreshService } from '../../../core/services/refresh.service';
@@ -104,16 +104,28 @@ export class TaskRunAnalysisStore implements OnDestroy {
     this.reload$.next();
   }
 
-  /** Requests another analysis after a failed one. A completed analysis is never replaced. */
+  /** Requests another analysis after a failed one. */
   request(): void {
+    this.send('FAILED', false);
+  }
+
+  /**
+   * Analyses the evidence of a completed analysis again, which creates a new revision and uses AI quota. Only on an
+   * explicit user action. The completed analysis stays visible until the new one is accepted.
+   */
+  reanalyse(): void {
+    this.send('COMPLETED', true);
+  }
+
+  private send(expected: AnalysisStatus, force: boolean): void {
     const { analysis, requesting } = this.state.value;
-    if (requesting || analysis?.status !== 'FAILED') {
+    if (requesting || analysis?.status !== expected) {
       return;
     }
     const version = ++this.version;
     this.patch({ requesting: true, requestError: null });
     this.api
-      .request(analysis.failureEvidenceId)
+      .request(analysis.failureEvidenceId, force)
       .pipe(takeUntil(this.destroyed$))
       .subscribe({
         next: (accepted) => {

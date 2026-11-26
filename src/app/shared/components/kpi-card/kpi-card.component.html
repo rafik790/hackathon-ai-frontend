@@ -6,7 +6,7 @@
     </span>
   </div>
   <ng-container *ngIf="!loading || value !== null; else skeleton">
-    <div class="value">{{ value ?? '—' }}</div>
+    <div class="value" [class.text]="textValue">{{ value ?? '—' }}</div>
     <div class="caption" *ngIf="caption">{{ caption }}</div>
   </ng-container>
   <ng-template #skeleton>

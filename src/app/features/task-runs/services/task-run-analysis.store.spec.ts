@@ -46,6 +46,58 @@ describe('TaskRunAnalysisStore', () => {
     expect(api.request).not.toHaveBeenCalled();
   }));
 
+  it('analyses a completed analysis again with force and follows the new revision', fakeAsync(() => {
+    const accepted = new Subject<FailureAnalysis>();
+    const revision = { ...COMPLETED_REVISION_1 };
+    answers(of(COMPILATION_ANALYSIS), of(unfinishedAnalysis('PROCESSING', { id: 9, revision: 1 })), of(revision));
+    api.request.and.returnValue(accepted);
+    store.setTaskRun(52);
+
+    store.reanalyse();
+    store.reanalyse();
+    expect(api.request).toHaveBeenCalledOnceWith(2, true);
+    // The completed analysis stays until the new one is accepted.
+    expect(state.analysis).toBe(COMPILATION_ANALYSIS);
+    expect(state.requesting).toBeTrue();
+
+    accepted.next(unfinishedAnalysis('PENDING', { id: 9, revision: 1 }));
+    expect(state.analysis?.status).toBe('PENDING');
+    tick(POLL_INTERVAL_MS);
+    expect(state.analysis?.status).toBe('PROCESSING');
+    tick(POLL_INTERVAL_MS);
+    expect(state.analysis).toBe(revision);
+    tick(10 * SLOW_POLL_INTERVAL_MS);
+    expect(api.latestOfTaskRun).toHaveBeenCalledTimes(3);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  }));
+
+  it('never forces an analysis that is not completed, and never retries a completed one without force', () => {
+    answers(of(unfinishedAnalysis('FAILED')), of(unfinishedAnalysis('PROCESSING')));
+    api.request.and.returnValue(of(unfinishedAnalysis('PENDING')));
+    store.setTaskRun(52);
+    store.reanalyse();
+    expect(api.request).not.toHaveBeenCalled();
+
+    store.request();
+    expect(api.request).toHaveBeenCalledOnceWith(2, false);
+  });
+
+  for (const [status, message] of [
+    [409, 'Evidence 2 was already analysed'],
+    [429, 'The daily AI quota of 100 invocations is exhausted'],
+  ] as const) {
+    it(`keeps the completed analysis when re-analysis is rejected with ${status}`, () => {
+      api.latestOfTaskRun.and.returnValue(of(COMPILATION_ANALYSIS));
+      api.request.and.returnValue(throwError(() => apiError(status, message)));
+      store.setTaskRun(52);
+      store.reanalyse();
+
+      expect(state.analysis).toBe(COMPILATION_ANALYSIS);
+      expect(state.requesting).toBeFalse();
+      expect(state.requestError).toEqual(jasmine.objectContaining({ status, message }));
+    });
+  }
+
   it('treats 404 as a missing analysis and keeps other errors', () => {
     answers(throwError(() => apiError(404)), throwError(() => apiError(503)));
     store.setTaskRun(1);
@@ -111,7 +163,7 @@ describe('TaskRunAnalysisStore', () => {
     store.request();
     store.request();
     ticks.next();
-    expect(api.request).toHaveBeenCalledOnceWith(2);
+    expect(api.request).toHaveBeenCalledOnceWith(2, false);
     expect(api.latestOfTaskRun).toHaveBeenCalledTimes(1);
     expect(state.requesting).toBeTrue();
 
@@ -165,6 +217,8 @@ describe('TaskRunAnalysisStore', () => {
     expect(api.latestOfTaskRun).toHaveBeenCalledTimes(1);
   }));
 });
+
+const COMPLETED_REVISION_1: FailureAnalysis = { ...COMPILATION_ANALYSIS, id: 9, revision: 1 };
 
 function apiError(status: number, message = 'x'): ApiError {
   return { status, title: 'Error', message, path: null, fieldErrors: [] };

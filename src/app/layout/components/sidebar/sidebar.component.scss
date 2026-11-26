@@ -39,7 +39,10 @@
   text-transform: uppercase;
   color: t.$navy-700;
   color: rgba(148, 163, 184, 0.6);
+  &.later { margin-top: t.$space-5; }
 }
+
+.divider { height: 1px; margin: t.$space-3 t.$space-2; background: rgba(148, 163, 184, 0.16); }
 
 .nav-item {
   position: relative;

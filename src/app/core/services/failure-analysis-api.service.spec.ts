@@ -50,4 +50,13 @@ describe('FailureAnalysisApiService', () => {
     expect(req.request.params.keys()).toEqual([]);
     req.flush({}, { status: 202, statusText: 'Accepted' });
   });
+
+  it('requests a forced analysis with force=true', () => {
+    service.request(2, true).subscribe();
+
+    const req = http.expectOne((r) => r.url === '/agent/api/v1/failure-evidence/2/analyse');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.params.get('force')).toBe('true');
+    req.flush({}, { status: 202, statusText: 'Accepted' });
+  });
 });
