@@ -21,6 +21,7 @@ const PRESENTATION: Readonly<Record<string, StatusPresentation>> = {
   PROCESSING: { label: 'Processing', tone: 'info', icon: 'sync' },
   RETRY_PENDING: { label: 'Retry pending', tone: 'warning', icon: 'schedule' },
   COMPLETED: { label: 'Completed', tone: 'success', icon: 'check_circle' },
+  REJECTED: { label: 'Rejected', tone: 'warning', icon: 'block' },
   CANCELLED: { label: 'Cancelled', tone: 'warning', icon: 'block' },
   UP: { label: 'Up', tone: 'success', icon: 'check_circle' },
   DOWN: { label: 'Down', tone: 'danger', icon: 'error' },

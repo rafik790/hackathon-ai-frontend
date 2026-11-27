@@ -4,8 +4,8 @@ import { AppEnvironment } from './environment.model';
 export const environment: AppEnvironment = {
   production: false,
   appVersion: '1.0.0-dev',
-  apiBaseUrl: 'http://35.154.223.145/agent/api/v1',
-  actuatorBaseUrl: 'http://35.154.223.145/agent/actuator',
-  apiDocsUrl: 'http://35.154.223.145/agent/swagger-ui.html',
+  apiBaseUrl: 'http://43.205.112.214/agent/api/v1',
+  actuatorBaseUrl: 'http://43.205.112.214/agent/actuator',
+  apiDocsUrl: 'http://43.205.112.214/agent/swagger-ui.html',
   autoRefreshIntervalMs: 30000,
 };

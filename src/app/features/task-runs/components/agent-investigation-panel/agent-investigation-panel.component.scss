@@ -1,0 +1,132 @@
+@use 'tokens' as t;
+
+:host { display: block; min-width: 0; }
+
+// Teal accent: tool-driven investigation, distinct from the blue failure analysis above.
+$accent: #0f6e56;
+$accent-bg: #e1f5ee;
+$accent-border: #9fe1cb;
+
+.agent { border-top: 3px solid $accent; }
+
+.title {
+  display: flex;
+  align-items: flex-start;
+  gap: t.$space-3;
+  .icon {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 32px; height: 32px; border-radius: t.$radius-md; background: $accent-bg; color: $accent;
+    .mat-icon { font-size: 20px; width: 20px; height: 20px; }
+  }
+}
+.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-2 t.$space-3; }
+
+h3 { @include t.eyebrow; margin: t.$space-5 0 t.$space-2; }
+p { margin: 0; overflow-wrap: anywhere; }
+.muted { color: t.$text-muted; font-size: t.$fs-base; }
+.notice { display: flex; margin-bottom: t.$space-4; }
+app-error-state.notice { display: block; }
+.alert-text { min-width: 0; overflow-wrap: anywhere; }
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: t.$space-3 t.$space-5;
+  margin: 0;
+  dt { @include t.eyebrow; margin-bottom: 2px; }
+  dd { margin: 0; font-size: t.$fs-base; overflow-wrap: anywhere; }
+}
+
+.progress {
+  margin-top: t.$space-4;
+  p { margin-top: t.$space-2; color: t.$text-secondary; font-size: t.$fs-base; }
+}
+
+// Report
+.report {
+  margin-top: t.$space-5;
+  padding: t.$space-4 t.$space-5;
+  border: 1px solid $accent-border;
+  border-radius: t.$radius-lg;
+  background: rgba(225, 245, 238, 0.45);
+  h3:first-of-type { margin-top: t.$space-4; }
+}
+.report-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: t.$space-2; }
+.report-head .eyebrow { color: $accent; }
+.chip {
+  font-size: t.$fs-xs; font-weight: t.$fw-semibold; color: $accent; background: $accent-bg;
+  border: 1px solid $accent-border; border-radius: t.$radius-pill; padding: 2px 8px;
+}
+.summary { margin-top: t.$space-2; font-size: t.$fs-lg; font-weight: t.$fw-semibold; line-height: 1.45; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: t.$space-5; }
+.root-cause p { font-size: t.$fs-md; color: t.$gray-700; }
+.ratings {
+  margin: t.$space-4 0 0; display: grid; gap: t.$space-3; align-content: start;
+  dt { @include t.eyebrow; margin-bottom: 2px; }
+  dd { margin: 0; font-size: t.$fs-md; font-weight: t.$fw-semibold; }
+}
+.meter {
+  display: block; height: 6px; margin-top: t.$space-1; border-radius: t.$radius-pill; background: t.$gray-200; overflow: hidden;
+  > span { display: block; height: 100%; background: $accent; }
+}
+.evidence {
+  display: grid; gap: t.$space-2; margin: 0; padding: 0; list-style: none;
+  li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: t.$space-3; align-items: start; }
+}
+.step-ref { font-size: t.$fs-sm; font-weight: t.$fw-semibold; color: $accent; padding-top: 6px; }
+pre {
+  margin: 0; padding: t.$space-2 t.$space-3; max-height: 220px; overflow: auto;
+  border: 1px solid t.$border; border-radius: t.$radius-sm; background: t.$surface;
+  font-family: t.$font-mono; font-size: t.$fs-sm; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.note {
+  display: flex; align-items: center; gap: t.$space-1; margin-top: t.$space-2; font-size: t.$fs-sm; color: t.$text-muted;
+  .mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+.actions { margin: 0; padding-left: t.$space-5; display: grid; gap: t.$space-1; font-size: t.$fs-base; li { overflow-wrap: anywhere; } }
+
+// Timeline
+.timeline { margin: 0; padding: 0; list-style: none; }
+.step { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: t.$space-3; }
+.rail { display: flex; flex-direction: column; align-items: center; }
+.node {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid t.$border-strong; background: t.$surface; color: t.$text-secondary;
+  .mat-icon { font-size: 18px; width: 18px; height: 18px; }
+}
+.line { flex: 1; width: 2px; min-height: 16px; background: t.$border; }
+.content { min-width: 0; padding: 4px 0 t.$space-5; }
+.head { display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-2; }
+.number { font-size: t.$fs-xs; font-weight: t.$fw-semibold; color: t.$text-muted; text-transform: uppercase; letter-spacing: 0.04em; }
+.tool { font-size: t.$fs-md; font-weight: t.$fw-semibold; }
+.duration { margin-left: auto; font-size: t.$fs-xs; color: t.$text-muted; }
+.resource { margin-top: 2px; font-size: t.$fs-sm; color: t.$text-secondary; overflow-wrap: anywhere; code { color: t.$primary-700; } }
+.reasoning { margin-top: t.$space-1; font-size: t.$fs-base; color: t.$text-secondary; font-style: italic; }
+.refusal {
+  display: flex; gap: t.$space-1; margin-top: t.$space-1; font-size: t.$fs-sm; color: #b54708;
+  .mat-icon { flex: none; font-size: 16px; width: 16px; height: 16px; }
+}
+.status-failed .refusal { color: #b42318; }
+.status-succeeded .node { border-color: $accent-border; background: $accent-bg; color: $accent; }
+.status-completed .node { border-color: $accent; background: $accent; color: t.$white; }
+.status-failed .node { border-color: t.$danger-border; background: t.$danger-bg; color: t.$danger; }
+.status-rejected .node { border-color: t.$warning-border; background: t.$warning-bg; color: t.$warning; }
+.waiting .node { border-style: dashed; color: t.$text-muted; }
+details {
+  margin-top: t.$space-2;
+  summary {
+    display: inline-flex; align-items: center; gap: 2px; font-size: t.$fs-sm; color: t.$primary-600; cursor: pointer; list-style: none;
+    &::-webkit-details-marker { display: none; }
+    .mat-icon { font-size: 18px; width: 18px; height: 18px; transition: transform t.$transition-fast; }
+  }
+  &[open] summary .mat-icon { transform: rotate(90deg); }
+  pre { margin-top: t.$space-1; background: t.$gray-50; }
+}
+
+@include t.respond-below(t.$bp-md) {
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+@include t.respond-below(t.$bp-sm) {
+  .evidence li { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .step-ref { padding-top: 0; }
+}

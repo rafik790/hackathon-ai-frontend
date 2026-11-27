@@ -1,0 +1,150 @@
+<section class="card agent" id="agent-investigation" aria-labelledby="agent-investigation-title" *ngIf="state$ | async as state">
+  <header class="card-header">
+    <div class="title">
+      <span class="icon" aria-hidden="true"><mat-icon>manage_search</mat-icon></span>
+      <div>
+        <h2 id="agent-investigation-title">AI Agent Investigation</h2>
+        <div class="subtitle">The agent chooses read-only Kubernetes and Tekton tools step by step and reports what the evidence shows.</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <app-status-badge *ngIf="state.investigation as investigation" [status]="investigation.status" size="sm"></app-status-badge>
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        [disabled]="state.loading || state.starting || (state.investigation !== null && isActive(state.investigation.status))"
+        (click)="investigate()"
+      >
+        <mat-icon>{{ state.starting ? 'hourglass_empty' : 'manage_search' }}</mat-icon>
+        {{ state.starting ? 'Starting…' : 'Investigate with AI Agent' }}
+      </button>
+    </div>
+  </header>
+
+  <div class="card-body" aria-live="polite">
+    <div class="inline-alert danger notice" *ngIf="state.startError as error" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <div class="alert-text"><strong>{{ startErrorTitle(error) }}</strong> {{ error.message }}</div>
+    </div>
+    <app-error-state *ngIf="state.error && state.investigation" class="notice" [inline]="true" [error]="state.error" (retry)="reload()"></app-error-state>
+
+    <ng-container *ngIf="state.investigation as investigation; else none">
+      <dl class="facts">
+        <div><dt>Investigation</dt><dd>#{{ investigation.id }}</dd></div>
+        <div><dt>{{ investigation.targetType === 'TASK_RUN' ? 'TaskRun' : 'PipelineRun' }}</dt><dd class="mono">{{ investigation.targetName }}</dd></div>
+        <div><dt>Namespace</dt><dd class="mono">{{ investigation.namespace }}</dd></div>
+        <div><dt>Started</dt><dd>{{ (investigation.startedAt ?? investigation.createdAt | date: 'medium') ?? '—' }}</dd></div>
+        <div><dt>Steps</dt><dd>{{ investigation.stepCount }} · {{ investigation.toolCallCount }} tool {{ investigation.toolCallCount === 1 ? 'call' : 'calls' }}</dd></div>
+      </dl>
+
+      <div class="progress" *ngIf="isActive(investigation.status)">
+        <mat-progress-bar mode="indeterminate" aria-label="Investigation in progress"></mat-progress-bar>
+        <p>{{ investigation.status === 'PENDING' ? 'Queued. The agent starts shortly.' : 'The agent is investigating. New steps appear below as it works.' }}</p>
+      </div>
+
+      <div class="inline-alert danger" *ngIf="investigation.status === 'FAILED'" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <div class="alert-text"><strong>The investigation ended without a report.</strong> {{ investigation.errorMessage }}</div>
+      </div>
+
+      <section class="report" *ngIf="investigation.status === 'COMPLETED' && investigation.report as report" aria-label="Investigation report">
+        <div class="report-head">
+          <span class="eyebrow">Agent report</span>
+          <span class="chip">Based on {{ investigation.toolCallCount }} tool {{ investigation.toolCallCount === 1 ? 'call' : 'calls' }}</span>
+        </div>
+        <p class="summary">{{ report.summary }}</p>
+        <div class="grid">
+          <div class="root-cause">
+            <h3>Root cause</h3>
+            <p>{{ report.rootCause }}</p>
+          </div>
+          <dl class="ratings">
+            <div><dt>Category</dt><dd>{{ category(report.failureCategory) }}</dd></div>
+            <div>
+              <dt>Confidence</dt>
+              <dd>
+                {{ confidencePercent(report.confidence) }}%
+                <span class="meter" role="meter" aria-label="Confidence" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="confidencePercent(report.confidence)">
+                  <span [style.width.%]="confidencePercent(report.confidence)"></span>
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <ng-container *ngIf="report.evidence.length">
+          <h3>Evidence</h3>
+          <ul class="evidence">
+            <li *ngFor="let item of report.evidence">
+              <a class="step-ref" [href]="'#agent-step-' + item.step" (click)="$event.preventDefault()">Step {{ item.step }}</a>
+              <pre tabindex="0">{{ item.observation }}</pre>
+            </li>
+          </ul>
+        </ng-container>
+        <p class="note" *ngIf="report.unverifiedEvidence > 0">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          {{ report.unverifiedEvidence }} evidence {{ report.unverifiedEvidence === 1 ? 'item was' : 'items were' }} removed because the cited step did not contain {{ report.unverifiedEvidence === 1 ? 'it' : 'them' }}.
+        </p>
+
+        <ng-container *ngIf="report.recommendedActions.length">
+          <h3>Recommended next steps</h3>
+          <ol class="actions">
+            <li *ngFor="let action of report.recommendedActions">{{ action }}</li>
+          </ol>
+        </ng-container>
+      </section>
+
+      <section class="timeline-section" aria-label="Agent activity">
+        <h3>Agent activity</h3>
+        <ol class="timeline" *ngIf="state.steps.length; else noSteps">
+          <li *ngFor="let step of state.steps; trackBy: trackStep; let last = last" [id]="'agent-step-' + step.stepNumber"
+              [class]="'step status-' + step.status.toLowerCase()">
+            <div class="rail" aria-hidden="true">
+              <span class="node"><mat-icon>{{ tool(step).icon }}</mat-icon></span>
+              <span class="line" *ngIf="!last || isActive(investigation.status)"></span>
+            </div>
+            <div class="content">
+              <div class="head">
+                <span class="number">Step {{ step.stepNumber }}</span>
+                <span class="tool">{{ tool(step).label }}</span>
+                <app-status-badge [status]="step.status" size="sm"></app-status-badge>
+                <span class="duration" *ngIf="step.durationMs !== null">{{ step.durationMs }} ms</span>
+              </div>
+              <div class="resource" *ngIf="step.arguments?.['resourceName'] as resource">
+                <code>{{ resource }}</code><span *ngIf="step.arguments?.['namespace'] as ns"> in <code>{{ ns }}</code></span>
+              </div>
+              <p class="reasoning" *ngIf="step.reasoning">{{ step.reasoning }}</p>
+              <p class="refusal" *ngIf="step.errorMessage">
+                <mat-icon aria-hidden="true">{{ step.status === 'REJECTED' ? 'block' : 'error_outline' }}</mat-icon>{{ step.errorMessage }}
+              </p>
+              <details *ngIf="step.resultSummary && step.action === 'CALL_TOOL'">
+                <summary><mat-icon aria-hidden="true">chevron_right</mat-icon>Tool result</summary>
+                <pre tabindex="0">{{ formatResult(step.resultSummary) }}</pre>
+              </details>
+            </div>
+          </li>
+          <li class="step waiting" *ngIf="isActive(investigation.status)">
+            <div class="rail" aria-hidden="true"><span class="node"><mat-icon>more_horiz</mat-icon></span></div>
+            <div class="content"><span class="tool muted">Choosing the next step…</span></div>
+          </li>
+        </ol>
+        <ng-template #noSteps>
+          <p class="muted">{{ isActive(investigation.status) ? 'No steps yet. The first one appears in a few seconds.' : 'The investigation has no steps.' }}</p>
+        </ng-template>
+      </section>
+    </ng-container>
+
+    <ng-template #none>
+      <app-loading-skeleton *ngIf="state.loading" variant="text" [rows]="3"></app-loading-skeleton>
+      <app-error-state *ngIf="!state.loading && state.error" [error]="state.error" [inline]="true" (retry)="reload()"></app-error-state>
+      <app-empty-state
+        *ngIf="!state.loading && !state.error"
+        icon="manage_search"
+        title="Not investigated yet"
+        message="Let the AI agent inspect this failure itself: it reads logs, events, deployments and permissions as needed and shows every step it takes."
+        [compact]="true"
+      ></app-empty-state>
+    </ng-template>
+  </div>
+</section>

@@ -34,6 +34,11 @@
 
       <app-failure-analysis-panel *ngIf="task.status === 'FAILED'" [taskRunId]="task.id"></app-failure-analysis-panel>
 
+      <app-agent-investigation-panel
+        *ngIf="task.status === 'FAILED'"
+        [target]="{ kind: 'TASK_RUN', name: task.taskRunName, namespace: task.namespace }"
+      ></app-agent-investigation-panel>
+
       <section class="card">
         <header class="card-header"><h2>Details</h2></header>
         <div class="card-body">
