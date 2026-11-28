@@ -3,6 +3,8 @@ export interface NavItem {
   readonly icon: string;
   readonly route: string;
   readonly description: string;
+  /** Shown only when the backend switched this optional feature on. */
+  readonly feature?: 'reliabilityAgent';
 }
 
 export interface NavGroup {
@@ -20,6 +22,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { label: 'Task Runs', icon: 'checklist', route: '/task-runs', description: 'Tekton TaskRuns' },
       { label: 'Failure Analysis', icon: 'troubleshoot', route: '/failure-analysis', description: 'Failures and their AI analyses' },
       { label: 'Failure Patterns', icon: 'insights', route: '/failure-patterns', description: 'Recurring failures over a period, analysed by AI' },
+      { label: 'Reliability Agent', icon: 'smart_toy', route: '/reliability-agent', description: 'Ask questions; the AI investigates with read-only tools', feature: 'reliabilityAgent' },
     ],
   },
   {

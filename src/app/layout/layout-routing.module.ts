@@ -43,6 +43,12 @@ const routes: Routes = [
           import('../features/failure-patterns/failure-patterns.module').then((m) => m.FailurePatternsModule),
       },
       {
+        path: 'reliability-agent',
+        data: { breadcrumb: 'Reliability Agent' },
+        loadChildren: () =>
+          import('../features/reliability-agent/reliability-agent.module').then((m) => m.ReliabilityAgentModule),
+      },
+      {
         path: 'settings',
         data: { breadcrumb: 'Settings' },
         loadChildren: () => import('../features/settings/settings.module').then((m) => m.SettingsModule),

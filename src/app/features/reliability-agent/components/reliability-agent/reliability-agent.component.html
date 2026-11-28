@@ -1,0 +1,170 @@
+<app-page-header
+  title="Reliability Agent"
+  description="Ask questions about your Tekton pipelines. The agent investigates with read-only tools and shows every step it takes."
+></app-page-header>
+
+<ng-container *ngIf="state$ | async as state">
+  <app-error-state *ngIf="state.statusError" [inline]="true" [error]="state.statusError"></app-error-state>
+
+  <app-empty-state
+    *ngIf="state.status && !state.status.enabled"
+    icon="smart_toy"
+    title="The Reliability Agent is switched off"
+    message="An administrator can enable it with INTERACTIVE_RELIABILITY_AGENT_ENABLED=true. All other pages work without it."
+  ></app-empty-state>
+
+  <div class="layout" *ngIf="state.status?.enabled">
+    <aside class="card conversations" aria-label="Conversations">
+      <header class="card-header">
+        <h2>Conversations</h2>
+        <button mat-stroked-button type="button" class="new" (click)="newConversation()"><mat-icon>add</mat-icon>New</button>
+      </header>
+      <app-error-state *ngIf="state.conversationsError" [inline]="true" [error]="state.conversationsError"></app-error-state>
+      <p class="muted pad" *ngIf="!state.conversations.length && !state.conversationsError">No conversations yet.</p>
+      <nav class="list">
+        <button
+          *ngFor="let item of state.conversations; trackBy: trackById"
+          type="button"
+          class="item"
+          [class.selected]="item.id === state.conversation?.id"
+          [attr.aria-current]="item.id === state.conversation?.id ? 'true' : null"
+          (click)="open(item)"
+        >
+          <span class="title">{{ item.title }}</span>
+          <span class="meta">
+            <app-status-badge *ngIf="item.status" [status]="item.status" size="sm"></app-status-badge>
+            {{ item.updatedAt | relativeTime }} · {{ item.messageCount }} {{ item.messageCount === 1 ? 'question' : 'questions' }}
+          </span>
+        </button>
+      </nav>
+    </aside>
+
+    <section class="card thread" aria-label="Conversation">
+      <div class="inline-alert warning" *ngIf="state.status && !state.status.available" role="alert">
+        <mat-icon aria-hidden="true">warning_amber</mat-icon>
+        <div><strong>The agent cannot answer right now.</strong> {{ state.status.reason }}</div>
+      </div>
+
+      <div class="messages" aria-live="polite">
+        <app-loading-skeleton *ngIf="state.loadingConversation" [rows]="4"></app-loading-skeleton>
+        <app-error-state *ngIf="state.conversationError" [inline]="true" [error]="state.conversationError"></app-error-state>
+
+        <div class="intro" *ngIf="!state.conversation && !state.loadingConversation">
+          <mat-icon aria-hidden="true">smart_toy</mat-icon>
+          <h2>What do you want to know?</h2>
+          <p class="muted">The agent searches runs, failure analyses, patterns, resolution history and the cluster. It cannot change anything.</p>
+          <div class="suggestions" aria-label="Suggested questions">
+            <button *ngFor="let suggestion of suggestions" type="button" class="suggestion" (click)="useSuggestion(suggestion)">{{ suggestion }}</button>
+          </div>
+        </div>
+
+        <article class="message" *ngFor="let message of state.conversation?.messages ?? []; trackBy: trackById">
+          <div class="question">
+            <mat-icon aria-hidden="true">person</mat-icon>
+            <p>{{ message.question }}</p>
+          </div>
+
+          <section class="activity" [attr.aria-label]="'Investigation activity for question ' + message.sequence">
+            <header>
+              <span class="eyebrow">Investigation activity</span>
+              <app-status-badge [status]="message.status" size="sm"></app-status-badge>
+              <span class="muted" *ngIf="message.durationMs !== null">{{ message.durationMs | duration }} · {{ message.toolCallCount }} tool calls</span>
+            </header>
+            <ol class="steps">
+              <li *ngFor="let call of message.toolCalls" [class]="'step ' + call.status.toLowerCase()">
+                <mat-icon aria-hidden="true">{{ statusIcon(call) }}</mat-icon>
+                <div class="step-body">
+                  <div><span class="num">#{{ call.sequence }}</span> {{ call.activity }} <span class="target mono">{{ target(call) }}</span></div>
+                  <div class="error" *ngIf="call.errorMessage">{{ call.status === 'REJECTED' ? 'Refused' : 'Failed' }}: {{ call.errorMessage }}</div>
+                  <details *ngIf="call.resultSummary">
+                    <summary>Evidence</summary>
+                    <pre>{{ call.resultSummary }}</pre>
+                  </details>
+                </div>
+              </li>
+              <li class="step working" *ngIf="isActive(message.status)">
+                <mat-icon aria-hidden="true">hourglass_top</mat-icon>
+                <div class="step-body">
+                  {{ message.status === 'PENDING' ? 'Queued…' : 'Investigating…' }}
+                  <mat-progress-bar mode="indeterminate" aria-label="The agent is working"></mat-progress-bar>
+                </div>
+              </li>
+              <li class="step succeeded" *ngIf="message.status === 'COMPLETED'">
+                <mat-icon aria-hidden="true">psychology</mat-icon>
+                <div class="step-body">Generated evidence-based conclusion</div>
+              </li>
+            </ol>
+          </section>
+
+          <div class="inline-alert danger" *ngIf="message.status === 'FAILED'" role="alert">
+            <mat-icon aria-hidden="true">error_outline</mat-icon>
+            <div><strong>No answer.</strong> {{ message.errorMessage }}</div>
+          </div>
+
+          <section class="answer" *ngIf="message.answer as answer" aria-label="Answer">
+            <p class="direct">{{ answer.answer }}</p>
+            <div class="block" *ngIf="answer.facts.length">
+              <h3><mat-icon aria-hidden="true">fact_check</mat-icon>Facts from tools</h3>
+              <ul>
+                <li *ngFor="let fact of answer.facts">
+                  {{ fact.statement }}
+                  <span class="cite" *ngFor="let n of fact.toolCalls" [matTooltip]="'Returned by tool call #' + n">#{{ n }}</span>
+                </li>
+              </ul>
+            </div>
+            <div class="block" *ngIf="answer.conclusions.length">
+              <h3><mat-icon aria-hidden="true">lightbulb</mat-icon>Agent conclusions</h3>
+              <ul><li *ngFor="let item of answer.conclusions">{{ item }}</li></ul>
+            </div>
+            <div class="block" *ngIf="answer.recommendations.length">
+              <h3><mat-icon aria-hidden="true">checklist</mat-icon>Recommendations</h3>
+              <ul><li *ngFor="let item of answer.recommendations">{{ item }}</li></ul>
+            </div>
+            <div class="block gaps" *ngIf="answer.missingEvidence.length">
+              <h3><mat-icon aria-hidden="true">help_outline</mat-icon>Missing or insufficient evidence</h3>
+              <ul><li *ngFor="let item of answer.missingEvidence">{{ item }}</li></ul>
+            </div>
+            <div class="refs" *ngIf="answer.references.length">
+              <span class="eyebrow">Related</span>
+              <ng-container *ngFor="let reference of answer.references">
+                <a *ngIf="link(reference) as route; else plain" class="ref" [routerLink]="route">
+                  {{ referenceKind(reference) }} <span class="mono">{{ reference.name }}</span>
+                </a>
+                <ng-template #plain><span class="ref">{{ referenceKind(reference) }} <span class="mono">{{ reference.name }}</span></span></ng-template>
+              </ng-container>
+            </div>
+          </section>
+        </article>
+      </div>
+
+      <div class="composer" role="group" aria-label="Ask the agent">
+        <div class="inline-alert danger" *ngIf="state.sendError as error" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <div><strong>{{ sendErrorTitle(error) }}</strong> {{ error.message }}</div>
+        </div>
+        <mat-form-field appearance="outline" class="field">
+          <mat-label>{{ state.conversation ? 'Ask a follow-up question' : 'Ask a question' }}</mat-label>
+          <textarea
+            matInput
+            [formControl]="question"
+            rows="2"
+            [maxlength]="state.status?.limits?.['maxQuestionChars'] ?? 2000"
+            (keydown)="onKeydown($event)"
+          ></textarea>
+          <mat-hint>Read-only: the agent cannot change resources, statuses or pipelines. Ctrl+Enter sends.</mat-hint>
+        </mat-form-field>
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          class="ask"
+          (click)="ask()"
+          [disabled]="!question.value.trim() || state.sending || !state.status?.available || isActive(state.conversation?.status)"
+        >
+          <mat-icon>{{ state.sending ? 'hourglass_empty' : 'send' }}</mat-icon>
+          {{ state.sending ? 'Sending…' : 'Ask' }}
+        </button>
+      </div>
+    </section>
+  </div>
+</ng-container>

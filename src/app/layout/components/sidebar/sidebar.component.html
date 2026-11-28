@@ -13,7 +13,7 @@
   </a>
 
   <nav class="nav" aria-label="Main navigation">
-    <ng-container *ngFor="let group of groups; let first = first">
+    <ng-container *ngFor="let group of (groups$ | async) ?? []; let first = first">
     <div class="section-label" [class.later]="!first" *ngIf="!collapsed">{{ group.label }}</div>
     <div class="divider" *ngIf="collapsed && !first" aria-hidden="true"></div>
     <a
