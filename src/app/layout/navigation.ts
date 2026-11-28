@@ -10,7 +10,7 @@ export interface NavGroup {
   readonly items: readonly NavItem[];
 }
 
-/** The investigation workflow first, in its order: overview, runs, failed task, analysis. */
+/** The investigation workflow first, in its order: overview, runs, failed task, analysis, recurring patterns. */
 export const NAV_GROUPS: readonly NavGroup[] = [
   {
     label: 'Investigate',
@@ -19,6 +19,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
       { label: 'Pipeline Runs', icon: 'account_tree', route: '/pipeline-runs', description: 'Tekton PipelineRuns' },
       { label: 'Task Runs', icon: 'checklist', route: '/task-runs', description: 'Tekton TaskRuns' },
       { label: 'Failure Analysis', icon: 'troubleshoot', route: '/failure-analysis', description: 'Failures and their AI analyses' },
+      { label: 'Failure Patterns', icon: 'insights', route: '/failure-patterns', description: 'Recurring failures over a period, analysed by AI' },
     ],
   },
   {

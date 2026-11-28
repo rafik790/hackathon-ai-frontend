@@ -1,0 +1,221 @@
+<section class="card patterns" aria-labelledby="pattern-analysis-title" *ngIf="state$ | async as state">
+  <header class="card-header">
+    <div class="title">
+      <span class="icon" aria-hidden="true"><mat-icon>insights</mat-icon></span>
+      <div>
+        <h2 id="pattern-analysis-title">Failure Pattern Analysis</h2>
+        <div class="subtitle">
+          Looks across all failures of a period for recurring problems, their common causes and how to prevent them.
+          To find why one run failed, open it and use AI Agent Investigation.
+        </div>
+      </div>
+    </div>
+    <span class="chip">Runs only when you start it</span>
+  </header>
+
+  <div class="card-body">
+    <div class="controls">
+      <mat-button-toggle-group [formControl]="period" aria-label="Period to analyse" class="density-compact">
+        <mat-button-toggle *ngFor="let p of periods" [value]="p">{{ periodLabels[p] }}</mat-button-toggle>
+      </mat-button-toggle-group>
+      <app-date-range-filter *ngIf="period.value === 'CUSTOM'" [group]="range" label="Days to analyse"></app-date-range-filter>
+      <span class="scope"><mat-icon aria-hidden="true">filter_alt</mat-icon>{{ namespace ? 'Namespace ' + namespace : 'All monitored namespaces' }}</span>
+      <span class="spacer"></span>
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        class="analyse"
+        [disabled]="state.starting || isActive(state.selected) || customIncomplete"
+        (click)="analyse()"
+      >
+        <mat-icon>{{ state.starting ? 'hourglass_empty' : 'auto_awesome' }}</mat-icon>
+        {{ state.starting ? 'Starting…' : 'Analyze Patterns with AI' }}
+      </button>
+    </div>
+
+    <div aria-live="polite">
+      <div class="inline-alert danger" *ngIf="state.startError as error" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        <div><strong>{{ startErrorTitle(error) }}</strong> {{ error.message }}</div>
+      </div>
+      <app-error-state *ngIf="state.selectedError" [inline]="true" [error]="state.selectedError"></app-error-state>
+
+      <ng-container *ngIf="state.selected as analysis; else nothing">
+        <div class="run-head">
+          <span class="eyebrow">Analysis #{{ analysis.id }} · {{ periodLabels[analysis.period] }}</span>
+          <app-status-badge [status]="analysis.status" size="sm"></app-status-badge>
+          <span class="muted">{{ analysis.from | date: 'mediumDate' }} – {{ analysis.to | date: 'mediumDate' }} · {{ analysis.namespace ?? 'all namespaces' }}</span>
+        </div>
+
+        <div class="progress" *ngIf="isActive(analysis)">
+          <mat-progress-bar mode="indeterminate" aria-label="Pattern analysis in progress"></mat-progress-bar>
+          <p>{{ analysis.status === 'PENDING' ? 'Queued. The analysis starts shortly.' : 'Reading the failure history and asking the AI for recurring patterns…' }}</p>
+        </div>
+
+        <div class="inline-alert danger" *ngIf="analysis.status === 'FAILED'" role="alert">
+          <mat-icon aria-hidden="true">error_outline</mat-icon>
+          <div><strong>The AI did not produce patterns.</strong> {{ analysis.errorMessage }}</div>
+        </div>
+
+        <section class="report" *ngIf="analysis.report as report" aria-label="Pattern analysis report">
+          <dl class="stats" aria-label="Analysis summary">
+            <div><dt>PipelineRuns analyzed</dt><dd>{{ report.statistics.totalPipelineRuns | number }}</dd></div>
+            <div><dt>Failed PipelineRuns</dt><dd>{{ report.statistics.failedPipelineRuns | number }}</dd></div>
+            <div><dt>Failed TaskRuns</dt><dd>{{ report.statistics.failedTaskRuns | number }}</dd></div>
+            <div><dt>Recurring patterns</dt><dd>{{ report.patterns.length }}</dd></div>
+            <div><dt>Reopened TaskRuns</dt><dd [class.text-danger]="report.statistics.reopenedTaskRuns > 0">{{ report.statistics.reopenedTaskRuns }}</dd></div>
+          </dl>
+          <div class="summary">
+            <p [class.clamp-2]="!summaryOpen(analysis.id)">{{ report.summary }}</p>
+            <button *ngIf="isLong(report.summary)" type="button" class="link-button" (click)="toggleSummary(analysis.id)">
+              {{ summaryOpen(analysis.id) ? 'Show less' : 'Show more' }}
+            </button>
+          </div>
+
+          <div class="patterns-list" *ngIf="report.patterns.length">
+            <article *ngFor="let pattern of report.patterns; let i = index" class="pattern" [class.recurs]="pattern.resolution.recurrencesAfterResolution > 0"
+              [class.open]="isOpen(analysis.id, i)" [attr.aria-labelledby]="'pattern-' + i">
+                <div class="head" (click)="toggle(analysis.id, i)">
+                  <div class="head-top">
+                    <h3 class="clamp-2" [id]="'pattern-' + i">{{ pattern.title }}</h3>
+                    <span class="chip">{{ category(pattern.failureCategory) }}</span>
+                    <span class="chip" [ngClass]="confidenceTone(pattern.confidence)" [matTooltip]="pattern.confidenceReason ?? ''" [matTooltipDisabled]="!pattern.confidenceReason">
+                      {{ pattern.confidence | titlecase }} confidence
+                    </span>
+                  </div>
+                  <div class="metrics">
+                    <span><strong>{{ pattern.occurrences }}</strong> failures · {{ pattern.percentage | number: '1.0-1' }}%</span>
+                    <span>{{ pattern.affectedPipelineRunCount }} PipelineRuns · {{ pattern.affectedTaskRunCount }} TaskRuns</span>
+                    <span class="flag" [class.warn]="pattern.resolution.unresolved > 0" [class.ok]="pattern.resolution.unresolved === 0">
+                      <mat-icon aria-hidden="true">{{ pattern.resolution.unresolved > 0 ? 'error_outline' : 'task_alt' }}</mat-icon>
+                      {{ pattern.resolution.unresolved > 0 ? pattern.resolution.unresolved + ' unresolved' : 'All resolved' }}
+                    </span>
+                    <span class="flag danger" *ngIf="pattern.resolution.recurrencesAfterResolution > 0">
+                      <mat-icon aria-hidden="true">replay</mat-icon>Recurred {{ pattern.resolution.recurrencesAfterResolution }}× after resolved
+                    </span>
+                    <span class="team"><mat-icon aria-hidden="true">{{ teamIcon(pattern) }}</mat-icon>{{ team(pattern) }}</span>
+                  </div>
+                  <p class="cause clamp-2"><span class="label">Root cause:</span> {{ pattern.commonRootCause }}</p>
+                  <button type="button" class="toggle link-button" [attr.aria-expanded]="isOpen(analysis.id, i)" [attr.aria-controls]="'pattern-details-' + i"
+                    (click)="$event.stopPropagation(); toggle(analysis.id, i)">
+                    {{ isOpen(analysis.id, i) ? 'Hide details' : 'View details' }}
+                    <mat-icon aria-hidden="true">{{ isOpen(analysis.id, i) ? 'expand_less' : 'expand_more' }}</mat-icon>
+                  </button>
+                </div>
+
+                <div class="details" *ngIf="isOpen(analysis.id, i)" [id]="'pattern-details-' + i">
+                  <p *ngIf="pattern.description">{{ pattern.description }}</p>
+                  <h4>Common root cause</h4>
+                  <p>{{ pattern.commonRootCause }}</p>
+                  <ng-container *ngIf="pattern.evidence.length">
+                    <h4>Supporting evidence</h4>
+                    <ul><li *ngFor="let item of pattern.evidence">{{ item }}</li></ul>
+                  </ng-container>
+                  <ng-container *ngIf="pattern.groupingEvidence?.length">
+                    <h4>Why these failures are grouped</h4>
+                    <ul class="grouping"><li *ngFor="let item of pattern.groupingEvidence">{{ item }}</li></ul>
+                  </ng-container>
+
+                  <dl class="facts">
+                    <div><dt>First occurrence</dt><dd>{{ pattern.firstOccurrence | date: 'short' }}</dd></div>
+                    <div><dt>Last occurrence</dt><dd>{{ pattern.lastOccurrence | date: 'short' }}</dd></div>
+                    <div><dt>Tasks</dt><dd class="mono">{{ pattern.taskNames.join(', ') }}</dd></div>
+                    <div><dt>Pipelines</dt><dd class="mono">{{ pattern.pipelineNames.join(', ') || '—' }}</dd></div>
+                  </dl>
+
+                  <div class="split">
+                    <div>
+                      <h4>Likely responsible team</h4>
+                      <p><strong>{{ team(pattern) }}</strong><ng-container *ngIf="pattern.teamReason"> — {{ pattern.teamReason }}</ng-container></p>
+                    </div>
+                    <div>
+                      <h4>Resolution</h4>
+                      <p>
+                        {{ pattern.resolution.unresolved }} of {{ pattern.occurrences }} unresolved
+                        <ng-container *ngIf="pattern.resolution.reopenCount"> · reopened {{ pattern.resolution.reopenCount }}×</ng-container>
+                        <ng-container *ngIf="pattern.resolution.recurrencesAfterResolution">
+                          · <span class="text-danger">recurred {{ pattern.resolution.recurrencesAfterResolution }}× after being marked resolved</span>
+                        </ng-container>
+                      </p>
+                      <div class="by-status">
+                        <ng-container *ngFor="let status of statuses">
+                          <app-status-badge *ngIf="pattern.resolution.byStatus[status]" [status]="status" size="sm"
+                            [label]="resolutionLabel(status) + ' ' + pattern.resolution.byStatus[status]"></app-status-badge>
+                        </ng-container>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ng-container *ngIf="pattern.preventiveActions.length">
+                    <h4>Recommended preventive actions</h4>
+                    <ol><li *ngFor="let action of pattern.preventiveActions">{{ action }}</li></ol>
+                  </ng-container>
+
+                  <div class="runs">
+                    <span class="eyebrow">Affected TaskRuns</span>
+                    <a *ngFor="let run of pattern.affectedTaskRuns" class="mono" [routerLink]="['/task-runs', run.id]">{{ run.name }}</a>
+                    <span class="muted" *ngIf="pattern.affectedTaskRunCount > pattern.affectedTaskRuns.length">+{{ pattern.affectedTaskRunCount - pattern.affectedTaskRuns.length }} more</span>
+                  </div>
+                  <div class="runs">
+                    <span class="eyebrow">Affected PipelineRuns</span>
+                    <ng-container *ngFor="let run of pattern.affectedPipelineRuns">
+                      <a *ngIf="run.id !== null; else plain" class="mono" [routerLink]="['/pipeline-runs', run.id]">{{ run.name }}</a>
+                      <ng-template #plain><span class="mono">{{ run.name }}</span></ng-template>
+                    </ng-container>
+                    <span class="muted" *ngIf="pattern.affectedPipelineRunCount > pattern.affectedPipelineRuns.length">+{{ pattern.affectedPipelineRunCount - pattern.affectedPipelineRuns.length }} more</span>
+                  </div>
+                </div>
+            </article>
+          </div>
+
+          <details class="groups" *ngIf="report.signatureGroups.length" [open]="!report.aiAnalysed">
+            <summary>Repeated identical errors ({{ report.signatureGroups.length }}), computed without AI</summary>
+            <ul>
+              <li *ngFor="let group of report.signatureGroups" [title]="group.signature">
+                <span class="clamp-2"><strong>{{ group.occurrences }}×</strong> <span class="mono">{{ group.taskNames.join(', ') }}</span>: {{ group.signature }}
+                <span class="muted">(last {{ group.lastOccurrence | date: 'short' }})</span></span>
+                <span class="muted basis" *ngIf="group.groupingBasis">{{ group.groupingBasis }}</span>
+              </li>
+            </ul>
+          </details>
+
+          <div class="notes" *ngIf="report.evidenceGaps.length || report.limitations.length">
+            <div *ngIf="report.evidenceGaps.length">
+              <h4>Evidence gaps</h4>
+              <ul><li *ngFor="let gap of report.evidenceGaps">{{ gap }}</li></ul>
+            </div>
+            <div>
+              <h4>Limitations</h4>
+              <ul><li *ngFor="let note of report.limitations">{{ note }}</li></ul>
+            </div>
+          </div>
+        </section>
+      </ng-container>
+      <ng-template #nothing>
+        <app-empty-state
+          *ngIf="!state.loadingHistory"
+          [compact]="true"
+          icon="insights"
+          title="No pattern analysis yet"
+          message="Choose a period and start an analysis to find recurring failures. Each analysis uses one AI request."
+        ></app-empty-state>
+      </ng-template>
+    </div>
+
+    <section class="history" *ngIf="state.history.length > 1" aria-label="Previous pattern analyses">
+      <h4>Previous analyses</h4>
+      <button
+        *ngFor="let item of state.history; trackBy: trackById"
+        type="button"
+        class="history-item"
+        [class.selected]="item.id === state.selected?.id"
+        (click)="select(item)"
+      >
+        <span>#{{ item.id }} · {{ periodLabels[item.period] }} · {{ item.namespace ?? 'all namespaces' }}</span>
+        <span class="muted">{{ item.createdAt | date: 'short' }}<ng-container *ngIf="item.patternCount !== null"> · {{ item.patternCount }} patterns</ng-container></span>
+        <app-status-badge [status]="item.status" size="sm"></app-status-badge>
+      </button>
+    </section>
+  </div>
+</section>
