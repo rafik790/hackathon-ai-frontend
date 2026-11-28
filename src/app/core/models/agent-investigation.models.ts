@@ -17,6 +17,34 @@ export interface AgentReportEvidence {
   readonly observation: string;
 }
 
+/** Who most likely has to fix the failure. */
+export type ResponsibleTeam = 'DEVELOPER' | 'DEVOPS_PLATFORM' | 'CICD_ENGINEER' | 'UNKNOWN';
+/** LOW whenever the cause is unproven or the team is unknown (enforced by the backend). */
+export type OwnershipConfidence = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface AgentReportOwnership {
+  readonly team: ResponsibleTeam;
+  readonly confidence: OwnershipConfidence;
+  /** Why this team, based on the evidence. */
+  readonly reason: string;
+}
+
+export interface AgentReportStep {
+  readonly action: string;
+  /** Command or configuration to apply, possibly several lines; null when the step needs none. */
+  readonly command: string | null;
+}
+
+export interface AgentReportTeamCheck {
+  readonly team: ResponsibleTeam;
+  /** What that team has to confirm or provide. */
+  readonly request: string;
+}
+
+/**
+ * The fields from title on are null in reports written before they existed; the UI then falls back to
+ * recommendedActions.
+ */
 export interface AgentReport {
   readonly summary: string;
   readonly rootCause: string;
@@ -29,6 +57,19 @@ export interface AgentReport {
   readonly recommendedActions: readonly string[];
   /** Evidence items of the model that were removed because they could not be verified. */
   readonly unverifiedEvidence: number;
+  readonly title?: string | null;
+  readonly ownership?: AgentReportOwnership | null;
+  /** What the responsible team does, in order. */
+  readonly resolutionSteps?: readonly AgentReportStep[] | null;
+  /** What another team has to confirm or provide. */
+  readonly otherTeamChecks?: readonly AgentReportTeamCheck[] | null;
+  readonly verificationSteps?: readonly AgentReportStep[] | null;
+  readonly expectedOutcome?: string | null;
+  /** What the evidence does not show; present whenever the cause or the owner is uncertain. */
+  readonly missingInformation?: readonly string[] | null;
+  readonly nextDiagnosticAction?: string | null;
+  /** Commands the backend removed as unsafe or naming resources the investigation never saw. */
+  readonly removedCommands?: number | null;
 }
 
 export interface AgentInvestigation {

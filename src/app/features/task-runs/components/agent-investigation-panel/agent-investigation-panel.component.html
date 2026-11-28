@@ -4,7 +4,7 @@
       <span class="icon" aria-hidden="true"><mat-icon>manage_search</mat-icon></span>
       <div>
         <h2 id="agent-investigation-title">AI Agent Investigation</h2>
-        <div class="subtitle">The agent chooses read-only Kubernetes and Tekton tools step by step and reports what the evidence shows.</div>
+        <div class="subtitle">Finds why your pipeline failed, identifies who should fix it, and provides clear steps to get it running again.</div>
       </div>
     </div>
     <div class="header-actions">
@@ -53,46 +53,112 @@
           <span class="eyebrow">Agent report</span>
           <span class="chip">Based on {{ investigation.toolCallCount }} tool {{ investigation.toolCallCount === 1 ? 'call' : 'calls' }}</span>
         </div>
-        <p class="summary">{{ report.summary }}</p>
-        <div class="grid">
-          <div class="root-cause">
-            <h3>Root cause</h3>
-            <p>{{ report.rootCause }}</p>
-          </div>
-          <dl class="ratings">
-            <div><dt>Category</dt><dd>{{ category(report.failureCategory) }}</dd></div>
-            <div>
-              <dt>Confidence</dt>
-              <dd>
-                {{ confidencePercent(report.confidence) }}%
-                <span class="meter" role="meter" aria-label="Confidence" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="confidencePercent(report.confidence)">
-                  <span [style.width.%]="confidencePercent(report.confidence)"></span>
-                </span>
-              </dd>
-            </div>
-          </dl>
-        </div>
+        <h3 class="incident">{{ report.title || report.summary }}</h3>
+        <p class="summary" *ngIf="report.title && report.summary !== report.title">{{ report.summary }}</p>
 
-        <ng-container *ngIf="report.evidence.length">
-          <h3>Evidence</h3>
-          <ul class="evidence">
+        <section class="block" aria-labelledby="agent-root-cause">
+          <h4 id="agent-root-cause"><mat-icon aria-hidden="true">troubleshoot</mat-icon>Root cause</h4>
+          <div class="grid">
+            <p class="root-cause">{{ report.rootCause }}</p>
+            <dl class="ratings">
+              <div><dt>Category</dt><dd>{{ category(report.failureCategory) }}</dd></div>
+              <div>
+                <dt>Confidence</dt>
+                <dd>
+                  {{ confidencePercent(report.confidence) }}%
+                  <span class="meter" role="meter" aria-label="Confidence" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="confidencePercent(report.confidence)">
+                    <span [style.width.%]="confidencePercent(report.confidence)"></span>
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </section>
+
+        <section class="block" *ngIf="report.ownership as ownership" aria-labelledby="agent-team">
+          <h4 id="agent-team"><mat-icon aria-hidden="true">groups</mat-icon>Responsible team</h4>
+          <div class="owner">
+            <span [class]="'team team-' + ownership.team.toLowerCase()">
+              <mat-icon aria-hidden="true">{{ team(ownership.team).icon }}</mat-icon>{{ team(ownership.team).label }}
+            </span>
+            <span [class]="'ownership ownership-' + ownership.confidence.toLowerCase()">{{ ownershipLabel(ownership.confidence) }}</span>
+          </div>
+          <p class="reason" *ngIf="ownership.reason">{{ ownership.reason }}</p>
+          <div class="checks" *ngIf="report.otherTeamChecks?.length">
+            <h5>Needed from other teams</h5>
+            <ul>
+              <li *ngFor="let check of report.otherTeamChecks">
+                <span class="check-team">{{ team(check.team).label }}</span> {{ check.request }}
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="block" aria-labelledby="agent-resolution">
+          <h4 id="agent-resolution"><mat-icon aria-hidden="true">build_circle</mat-icon>Recommended resolution</h4>
+          <ol class="steps" *ngIf="report.resolutionSteps?.length; else legacyActions">
+            <ng-container *ngTemplateOutlet="stepList; context: { $implicit: report.resolutionSteps }"></ng-container>
+          </ol>
+          <ng-template #legacyActions>
+            <ol class="steps" *ngIf="report.recommendedActions.length; else noResolution">
+              <li *ngFor="let action of report.recommendedActions; let i = index">
+                <span class="step-number" aria-hidden="true">{{ i + 1 }}</span>
+                <div class="step-body"><p>{{ action }}</p></div>
+              </li>
+            </ol>
+          </ng-template>
+          <ng-template #noResolution><p class="muted">The agent did not recommend a fix.</p></ng-template>
+          <p class="note" *ngIf="(report.removedCommands ?? 0) > 0">
+            <mat-icon aria-hidden="true">shield</mat-icon>
+            {{ report.removedCommands }} {{ report.removedCommands === 1 ? 'command was' : 'commands were' }} removed because {{ report.removedCommands === 1 ? 'it was' : 'they were' }} unsafe or named resources the investigation did not see.
+          </p>
+        </section>
+
+        <section class="block missing" *ngIf="report.missingInformation?.length" aria-labelledby="agent-missing">
+          <h4 id="agent-missing"><mat-icon aria-hidden="true">help_outline</mat-icon>Missing information</h4>
+          <ul><li *ngFor="let item of report.missingInformation">{{ item }}</li></ul>
+          <p class="next" *ngIf="report.nextDiagnosticAction"><strong>Next diagnostic step:</strong> {{ report.nextDiagnosticAction }}</p>
+        </section>
+
+        <section class="block" *ngIf="report.verificationSteps?.length || report.expectedOutcome" aria-labelledby="agent-verification">
+          <h4 id="agent-verification"><mat-icon aria-hidden="true">fact_check</mat-icon>Verification</h4>
+          <ol class="steps" *ngIf="report.verificationSteps?.length">
+            <ng-container *ngTemplateOutlet="stepList; context: { $implicit: report.verificationSteps }"></ng-container>
+          </ol>
+          <p class="outcome" *ngIf="report.expectedOutcome">
+            <mat-icon aria-hidden="true">check_circle</mat-icon><span><strong>Expected outcome:</strong> {{ report.expectedOutcome }}</span>
+          </p>
+        </section>
+
+        <section class="block" aria-labelledby="agent-evidence">
+          <h4 id="agent-evidence"><mat-icon aria-hidden="true">receipt_long</mat-icon>Evidence</h4>
+          <ul class="evidence" *ngIf="report.evidence.length; else noEvidence">
             <li *ngFor="let item of report.evidence">
               <a class="step-ref" [href]="'#agent-step-' + item.step" (click)="$event.preventDefault()">Step {{ item.step }}</a>
               <pre tabindex="0">{{ item.observation }}</pre>
             </li>
           </ul>
-        </ng-container>
-        <p class="note" *ngIf="report.unverifiedEvidence > 0">
-          <mat-icon aria-hidden="true">info</mat-icon>
-          {{ report.unverifiedEvidence }} evidence {{ report.unverifiedEvidence === 1 ? 'item was' : 'items were' }} removed because the cited step did not contain {{ report.unverifiedEvidence === 1 ? 'it' : 'them' }}.
-        </p>
+          <ng-template #noEvidence><p class="muted">No quoted evidence could be verified against the tool results.</p></ng-template>
+          <p class="note" *ngIf="report.unverifiedEvidence > 0">
+            <mat-icon aria-hidden="true">info</mat-icon>
+            {{ report.unverifiedEvidence }} evidence {{ report.unverifiedEvidence === 1 ? 'item was' : 'items were' }} removed because the cited step did not contain {{ report.unverifiedEvidence === 1 ? 'it' : 'them' }}.
+          </p>
+        </section>
 
-        <ng-container *ngIf="report.recommendedActions.length">
-          <h3>Recommended next steps</h3>
-          <ol class="actions">
-            <li *ngFor="let action of report.recommendedActions">{{ action }}</li>
-          </ol>
-        </ng-container>
+        <ng-template #stepList let-steps>
+          <li *ngFor="let step of steps; let i = index">
+            <span class="step-number" aria-hidden="true">{{ i + 1 }}</span>
+            <div class="step-body">
+              <p>{{ step.action }}</p>
+              <div class="command" *ngIf="step.command">
+                <pre tabindex="0"><code>{{ step.command }}</code></pre>
+                <button mat-icon-button type="button" class="copy" [appCopyToClipboard]="step.command" copyLabel="Command" aria-label="Copy command" matTooltip="Copy">
+                  <mat-icon>content_copy</mat-icon>
+                </button>
+              </div>
+            </div>
+          </li>
+        </ng-template>
       </section>
 
       <section class="timeline-section" aria-label="Agent activity">

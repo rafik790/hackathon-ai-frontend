@@ -97,3 +97,35 @@ export function page(...content: AgentInvestigation[]): PageResponse<AgentInvest
 export function apiError(status: number, message: string): ApiError {
   return { status, title: 'Error', message, path: null, fieldErrors: [] };
 }
+
+/** A report with ownership, resolution and verification, for a missing RBAC permission. */
+export const RBAC_COMPLETED = investigation('COMPLETED', {
+  id: 9,
+  stepCount: 3,
+  toolCallCount: 2,
+  failureCategory: 'PERMISSION_DENIED',
+  confidence: 0.92,
+  report: {
+    title: 'Pipeline service account cannot create Deployments in ci',
+    summary: 'The deploy task failed because its service account may not create Deployments.',
+    rootCause: 'The pipeline runs as pipeline-deployer, which may only read PipelineRuns, so creating the Deployment was refused.',
+    failureCategory: 'PERMISSION_DENIED',
+    confidence: 0.92,
+    evidence: [{ step: 1, observation: 'cannot create resource "deployments" in API group "apps"' }],
+    recommendedActions: ['Grant create on Deployments'],
+    unverifiedEvidence: 0,
+    ownership: { team: 'DEVOPS_PLATFORM', confidence: 'HIGH', reason: 'RBAC in namespace ci is managed by the platform team.' },
+    resolutionSteps: [
+      { action: 'Create a Role and RoleBinding for pipeline-deployer in ci', command: 'kind: Role\nmetadata:\n  name: <role-name>\n  namespace: ci' },
+      { action: 'Rerun the PipelineRun', command: null },
+    ],
+    otherTeamChecks: [{ team: 'DEVELOPER', request: 'Confirm that the deploy task should run as pipeline-deployer' }],
+    verificationSteps: [
+      { action: 'Check the permission', command: 'kubectl auth can-i create deployments -n ci --as=system:serviceaccount:ci:pipeline-deployer' },
+    ],
+    expectedOutcome: 'The deploy task creates the Deployment and the PipelineRun succeeds.',
+    missingInformation: [],
+    nextDiagnosticAction: null,
+    removedCommands: 1,
+  },
+});

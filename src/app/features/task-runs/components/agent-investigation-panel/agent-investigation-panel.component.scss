@@ -6,8 +6,16 @@
 $accent: #0f6e56;
 $accent-bg: #e1f5ee;
 $accent-border: #9fe1cb;
+$warn: #b54708;
 
 .agent { border-top: 3px solid $accent; }
+
+// Shared rules, grouped to keep the component styles small.
+.facts dt, .ratings dt, .block h5, .timeline-section h3 { @include t.eyebrow; }
+.facts dt, .ratings dt { margin-bottom: 2px; }
+.title .icon .mat-icon, .block h4 .mat-icon, .outcome .mat-icon { font-size: 20px; width: 20px; height: 20px; }
+.team .mat-icon, .node .mat-icon, summary .mat-icon { font-size: 18px; width: 18px; height: 18px; }
+.note .mat-icon, .refusal .mat-icon { flex: none; font-size: 16px; width: 16px; height: 16px; }
 
 .title {
   display: flex;
@@ -16,12 +24,10 @@ $accent-border: #9fe1cb;
   .icon {
     display: inline-flex; align-items: center; justify-content: center; flex: none;
     width: 32px; height: 32px; border-radius: t.$radius-md; background: $accent-bg; color: $accent;
-    .mat-icon { font-size: 20px; width: 20px; height: 20px; }
   }
 }
 .header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-2 t.$space-3; }
 
-h3 { @include t.eyebrow; margin: t.$space-5 0 t.$space-2; }
 p { margin: 0; overflow-wrap: anywhere; }
 .muted { color: t.$text-muted; font-size: t.$fs-base; }
 .notice { display: flex; margin-bottom: t.$space-4; }
@@ -33,7 +39,6 @@ app-error-state.notice { display: block; }
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: t.$space-3 t.$space-5;
   margin: 0;
-  dt { @include t.eyebrow; margin-bottom: 2px; }
   dd { margin: 0; font-size: t.$fs-base; overflow-wrap: anywhere; }
 }
 
@@ -49,20 +54,59 @@ app-error-state.notice { display: block; }
   border: 1px solid $accent-border;
   border-radius: t.$radius-lg;
   background: rgba(225, 245, 238, 0.45);
-  h3:first-of-type { margin-top: t.$space-4; }
 }
 .report-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: t.$space-2; }
-.report-head .eyebrow { color: $accent; }
 .chip {
   font-size: t.$fs-xs; font-weight: t.$fw-semibold; color: $accent; background: $accent-bg;
-  border: 1px solid $accent-border; border-radius: t.$radius-pill; padding: 2px 8px;
+  border-radius: t.$radius-pill; padding: 2px 8px;
 }
-.summary { margin-top: t.$space-2; font-size: t.$fs-lg; font-weight: t.$fw-semibold; line-height: 1.45; }
+.incident { margin: t.$space-2 0 0; font-size: t.$fs-lg; font-weight: t.$fw-semibold; line-height: 1.4; }
+.summary { margin-top: t.$space-1; font-size: t.$fs-md; color: t.$text-secondary; }
+
+// One section of the report: root cause, team, resolution, verification, evidence.
+.block {
+  margin-top: t.$space-4;
+  padding-top: t.$space-4;
+  border-top: 1px solid $accent-border;
+  h4 {
+    display: flex; align-items: center; gap: t.$space-2; margin: 0 0 t.$space-2;
+    font-size: t.$fs-md; font-weight: t.$fw-semibold; color: $accent;
+  }
+  h5 { margin: t.$space-3 0 t.$space-1; }
+  ul { margin: 0; padding-left: t.$space-5; display: grid; gap: t.$space-1; font-size: t.$fs-base; }
+}
+.owner { display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-2; }
+.team {
+  display: inline-flex; align-items: center; gap: t.$space-1; padding: 4px 10px; border-radius: t.$radius-pill;
+  font-size: t.$fs-base; font-weight: t.$fw-semibold; background: t.$gray-100;
+}
+.team-developer { color: #3c3489; background: #eeedfe; }
+.team-devops_platform { color: #0c447c; background: #e6f1fb; }
+.team-cicd_engineer { color: #633806; background: #faeeda; }
+.ownership { font-size: t.$fs-sm; font-weight: t.$fw-semibold; color: t.$text-secondary; }
+.ownership-high { color: $accent; }
+.ownership-low { color: $warn; }
+.reason { margin-top: t.$space-2; font-size: t.$fs-base; color: t.$gray-700; }
+.check-team { font-weight: t.$fw-semibold; &::after { content: ':'; } }
+.missing { h4 { color: $warn; } .next { margin-top: t.$space-2; font-size: t.$fs-base; } }
+
+.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: t.$space-3; }
+.steps > li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: t.$space-3; align-items: start; }
+.step-number {
+  display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
+  background: $accent; color: t.$white; font-size: t.$fs-sm; font-weight: t.$fw-semibold;
+}
+.step-body { min-width: 0; p { font-size: t.$fs-base; padding-top: 2px; } }
+.command {
+  position: relative; margin-top: t.$space-2;
+  pre { background: t.$gray-900; color: t.$gray-50; border-color: t.$gray-900; padding-right: 44px; white-space: pre; overflow-wrap: normal; }
+  .copy { position: absolute; top: 2px; right: 2px; color: t.$gray-200; }
+}
+.outcome { display: flex; gap: t.$space-2; margin-top: t.$space-3; font-size: t.$fs-base; .mat-icon { flex: none; color: $accent; } }
 .grid { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: t.$space-5; }
-.root-cause p { font-size: t.$fs-md; color: t.$gray-700; }
+.root-cause { font-size: t.$fs-md; color: t.$gray-700; }
 .ratings {
-  margin: t.$space-4 0 0; display: grid; gap: t.$space-3; align-content: start;
-  dt { @include t.eyebrow; margin-bottom: 2px; }
+  margin: 0; display: grid; gap: t.$space-3; align-content: start;
   dd { margin: 0; font-size: t.$fs-md; font-weight: t.$fw-semibold; }
 }
 .meter {
@@ -79,34 +123,26 @@ pre {
   border: 1px solid t.$border; border-radius: t.$radius-sm; background: t.$surface;
   font-family: t.$font-mono; font-size: t.$fs-sm; white-space: pre-wrap; overflow-wrap: anywhere;
 }
-.note {
-  display: flex; align-items: center; gap: t.$space-1; margin-top: t.$space-2; font-size: t.$fs-sm; color: t.$text-muted;
-  .mat-icon { font-size: 16px; width: 16px; height: 16px; }
-}
-.actions { margin: 0; padding-left: t.$space-5; display: grid; gap: t.$space-1; font-size: t.$fs-base; li { overflow-wrap: anywhere; } }
+.note { display: flex; align-items: center; gap: t.$space-1; margin-top: t.$space-2; font-size: t.$fs-sm; color: t.$text-muted; }
 
 // Timeline
+.timeline-section h3 { margin: t.$space-5 0 t.$space-2; }
 .timeline { margin: 0; padding: 0; list-style: none; }
 .step { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: t.$space-3; }
 .rail { display: flex; flex-direction: column; align-items: center; }
 .node {
   display: inline-flex; align-items: center; justify-content: center; flex: none;
   width: 32px; height: 32px; border-radius: 50%; border: 1px solid t.$border-strong; background: t.$surface; color: t.$text-secondary;
-  .mat-icon { font-size: 18px; width: 18px; height: 18px; }
 }
 .line { flex: 1; width: 2px; min-height: 16px; background: t.$border; }
 .content { min-width: 0; padding: 4px 0 t.$space-5; }
 .head { display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-2; }
-.number { font-size: t.$fs-xs; font-weight: t.$fw-semibold; color: t.$text-muted; text-transform: uppercase; letter-spacing: 0.04em; }
+.number { font-size: t.$fs-xs; font-weight: t.$fw-semibold; color: t.$text-muted; text-transform: uppercase; }
 .tool { font-size: t.$fs-md; font-weight: t.$fw-semibold; }
 .duration { margin-left: auto; font-size: t.$fs-xs; color: t.$text-muted; }
 .resource { margin-top: 2px; font-size: t.$fs-sm; color: t.$text-secondary; overflow-wrap: anywhere; code { color: t.$primary-700; } }
 .reasoning { margin-top: t.$space-1; font-size: t.$fs-base; color: t.$text-secondary; font-style: italic; }
-.refusal {
-  display: flex; gap: t.$space-1; margin-top: t.$space-1; font-size: t.$fs-sm; color: #b54708;
-  .mat-icon { flex: none; font-size: 16px; width: 16px; height: 16px; }
-}
-.status-failed .refusal { color: #b42318; }
+.refusal { display: flex; gap: t.$space-1; margin-top: t.$space-1; font-size: t.$fs-sm; color: $warn; }
 .status-succeeded .node { border-color: $accent-border; background: $accent-bg; color: $accent; }
 .status-completed .node { border-color: $accent; background: $accent; color: t.$white; }
 .status-failed .node { border-color: t.$danger-border; background: t.$danger-bg; color: t.$danger; }
@@ -117,7 +153,6 @@ details {
   summary {
     display: inline-flex; align-items: center; gap: 2px; font-size: t.$fs-sm; color: t.$primary-600; cursor: pointer; list-style: none;
     &::-webkit-details-marker { display: none; }
-    .mat-icon { font-size: 18px; width: 18px; height: 18px; transition: transform t.$transition-fast; }
   }
   &[open] summary .mat-icon { transform: rotate(90deg); }
   pre { margin-top: t.$space-1; background: t.$gray-50; }
