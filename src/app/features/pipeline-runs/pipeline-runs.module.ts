@@ -1,4 +1,5 @@
 import { NgModule } from '@angular/core';
+import { ResolutionUiModule } from '../../shared/resolution/resolution-ui.module';
 import { SharedModule } from '../../shared/shared.module';
 import { PipelineRunDetailComponent } from './components/pipeline-run-detail/pipeline-run-detail.component';
 import { PipelineRunListComponent } from './components/pipeline-run-list/pipeline-run-list.component';
@@ -7,7 +8,7 @@ import { PipelineRunsService } from './services/pipeline-runs.service';
 
 @NgModule({
   declarations: [PipelineRunListComponent, PipelineRunDetailComponent],
-  imports: [SharedModule, PipelineRunsRoutingModule],
+  imports: [SharedModule, ResolutionUiModule, PipelineRunsRoutingModule],
   providers: [PipelineRunsService],
 })
 export class PipelineRunsModule {}

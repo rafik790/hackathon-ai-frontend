@@ -56,6 +56,21 @@
         ></app-kpi-card>
       </div>
 
+      <section class="resolution-overview" aria-labelledby="resolution-overview-title" *ngIf="view.summary?.loading || view.summary?.data?.failedTaskRunsByResolution">
+        <h2 id="resolution-overview-title" class="eyebrow">Resolution of failed task runs</h2>
+        <div class="kpi-grid five">
+          <app-kpi-card
+            *ngFor="let card of resolutionCards"
+            [label]="card.label"
+            [icon]="card.icon"
+            [tone]="card.tone"
+            [loading]="view.summary?.loading ?? true"
+            [value]="view.summary?.data?.failedTaskRunsByResolution ? (view.summary?.data?.failedTaskRunsByResolution?.[card.status] | number) : null"
+            [caption]="share(view.summary?.data?.failedTaskRunsByResolution?.[card.status], view.summary?.data?.failedTaskRuns)"
+          ></app-kpi-card>
+        </div>
+      </section>
+
       <div class="sample-note" *ngIf="view.breakdown?.truncated">
         <mat-icon aria-hidden="true">info</mat-icon>
         Task and reason use the {{ view.breakdown?.sampledTaskRuns }} most recent failed task runs of this window.
@@ -66,7 +81,7 @@
           <header class="card-header">
             <div>
               <h2>Recent failed task runs</h2>
-              <div class="subtitle">Open one to see its failure analysis</div>
+              <div class="subtitle">Open one to see its failure analysis or to update its resolution</div>
             </div>
             <div class="actions">
               <a mat-button color="primary" routerLink="/task-runs" [queryParams]="filters.namespace ? { status: 'failed', namespace: filters.namespace } : { status: 'failed' }">
@@ -76,9 +91,9 @@
           </header>
           <app-data-table
             [columns]="recentColumns"
-            [data]="recent$ | async"
+            [data]="recentRows$ | async"
             [showPaginator]="false"
-            [loading]="view.failures?.loading ?? true"
+            [loading]="(view.failures?.loading ?? true) || ((recent$ | async) !== null && (recentRows$ | async) === null)"
             [error]="view.failures?.error ?? null"
             [rowLabel]="rowLabel"
             emptyIcon="verified"

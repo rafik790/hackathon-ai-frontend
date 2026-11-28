@@ -23,6 +23,7 @@ table { width: 100%; }
 .primary { font-weight: t.$fw-medium; color: t.$text; }
 .mono { font-family: t.$font-mono; font-size: t.$fs-sm; }
 .secondary { font-size: t.$fs-xs; color: t.$text-muted; }
+.status-secondary { display: block; margin-top: 2px; white-space: nowrap; }
 
 .kind-duration, .kind-datetime { white-space: nowrap; font-variant-numeric: tabular-nums; color: t.$text-secondary; }
 

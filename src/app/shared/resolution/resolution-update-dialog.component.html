@@ -1,0 +1,59 @@
+<h2 mat-dialog-title>{{ statusChanges ? label(form.controls.status.value) : 'Update resolution' }}</h2>
+<form [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <mat-dialog-content>
+    <p class="target">
+      TaskRun <code>{{ resolution.targetName }}</code>
+      · currently <strong>{{ label(resolution.status) }}</strong>
+    </p>
+    <p class="hint" *ngIf="data.hint"><mat-icon aria-hidden="true">lightbulb</mat-icon>{{ data.hint }}</p>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Resolution status</mat-label>
+        <mat-select formControlName="status">
+          <mat-option *ngFor="let status of statuses" [value]="status">
+            {{ label(status) }}{{ status === resolution.status ? ' (unchanged)' : '' }}
+          </mat-option>
+        </mat-select>
+        <mat-hint>Only allowed transitions are offered.</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Assigned team</mat-label>
+        <mat-select formControlName="assignedTeam">
+          <mat-option value="">Not assigned</mat-option>
+          <mat-option *ngFor="let option of teams" [value]="option">{{ team(option).label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field appearance="outline">
+        <mat-label>Assigned person</mat-label>
+        <input matInput formControlName="assignedPerson" maxlength="128" autocomplete="off" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Your name</mat-label>
+        <input matInput formControlName="changedBy" maxlength="128" autocomplete="name" />
+        <mat-hint>Shown in the history</mat-hint>
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Resolution summary</mat-label>
+      <input matInput formControlName="summary" maxlength="2000" autocomplete="off" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Resolution notes</mat-label>
+      <textarea matInput formControlName="notes" rows="3" maxlength="4000"></textarea>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Comment for this change</mat-label>
+      <input matInput formControlName="comment" maxlength="4000" autocomplete="off" />
+      <mat-hint>Kept in the history</mat-hint>
+    </mat-form-field>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" mat-dialog-close>Cancel</button>
+    <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">Save</button>
+  </mat-dialog-actions>
+</form>

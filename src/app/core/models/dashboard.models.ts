@@ -1,3 +1,5 @@
+import { ResolutionStatus } from './resolution.models';
+
 /** Mirrors com.hackathon.agent.dto.DashboardSummaryResponse / TrendResponse. */
 
 /** Presets accepted by the `range` parameter (com.hackathon.agent.enums.TimeRangePreset). */
@@ -45,6 +47,11 @@ export interface DashboardSummary {
   readonly totalTaskRuns: number;
   readonly failedTaskRuns: number;
   readonly taskFailureRate: number;
+  /**
+   * The failed TaskRuns of the window by resolution status (same filters as failedTaskRuns; they add up to it). A failed
+   * TaskRun without a resolution record counts as OPEN. Missing on backends without resolution tracking.
+   */
+  readonly failedTaskRunsByResolution?: Readonly<Record<ResolutionStatus, number>>;
 }
 
 export interface TrendPoint {

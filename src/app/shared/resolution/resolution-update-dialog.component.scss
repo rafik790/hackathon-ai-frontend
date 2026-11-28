@@ -1,0 +1,16 @@
+@use 'tokens' as t;
+
+mat-dialog-content { display: grid; gap: t.$space-1; min-width: min(560px, 80vw); }
+p { margin: 0; overflow-wrap: anywhere; }
+.target { font-size: t.$fs-base; color: t.$text-secondary; margin-bottom: t.$space-2; }
+.hint {
+  display: flex; gap: t.$space-2; align-items: flex-start; margin-bottom: t.$space-3; padding: t.$space-2 t.$space-3;
+  border-radius: t.$radius-md; background: #e1f5ee; color: #0f6e56; font-size: t.$fs-base;
+  .mat-icon { flex: none; font-size: 18px; width: 18px; height: 18px; }
+}
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: t.$space-3; }
+.full { width: 100%; }
+
+@include t.respond-below(t.$bp-sm) {
+  .row { grid-template-columns: 1fr; gap: 0; }
+}

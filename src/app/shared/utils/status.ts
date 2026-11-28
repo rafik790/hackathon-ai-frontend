@@ -10,7 +10,7 @@ interface StatusPresentation {
 /**
  * Presentation of every status the UI may render: the backend execution statuses
  * (RUNNING, SUCCEEDED, FAILED, UNKNOWN), failure analysis and Actuator health statuses and Tekton
- * states the backend may expose in future (CANCELLED).
+ * states the backend may expose in future (CANCELLED), and resolution statuses (OPEN … REOPENED).
  */
 const PRESENTATION: Readonly<Record<string, StatusPresentation>> = {
   SUCCEEDED: { label: 'Succeeded', tone: 'success', icon: 'check_circle' },
@@ -22,6 +22,11 @@ const PRESENTATION: Readonly<Record<string, StatusPresentation>> = {
   RETRY_PENDING: { label: 'Retry pending', tone: 'warning', icon: 'schedule' },
   COMPLETED: { label: 'Completed', tone: 'success', icon: 'check_circle' },
   REJECTED: { label: 'Rejected', tone: 'warning', icon: 'block' },
+  OPEN: { label: 'Open', tone: 'neutral', icon: 'flag' },
+  INVESTIGATING: { label: 'Investigating', tone: 'info', icon: 'manage_search' },
+  FIX_IN_PROGRESS: { label: 'Fix in progress', tone: 'warning', icon: 'construction' },
+  RESOLVED: { label: 'Resolved', tone: 'success', icon: 'task_alt' },
+  REOPENED: { label: 'Reopened', tone: 'danger', icon: 'replay' },
   CANCELLED: { label: 'Cancelled', tone: 'warning', icon: 'block' },
   UP: { label: 'Up', tone: 'success', icon: 'check_circle' },
   DOWN: { label: 'Down', tone: 'danger', icon: 'error' },

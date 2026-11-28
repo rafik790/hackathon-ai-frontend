@@ -35,6 +35,11 @@
           </div>
         </section>
 
+        <app-resolution-panel
+          *ngIf="run.status === 'FAILED' || (detail.tasks | firstFailedTask)"
+          [target]="{ kind: 'PIPELINE_RUN', id: run.id }"
+        ></app-resolution-panel>
+
         <div class="grid-main-side">
           <section class="card">
             <header class="card-header">

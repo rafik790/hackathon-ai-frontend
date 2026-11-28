@@ -19,13 +19,13 @@
 
     <app-data-table
       [columns]="columns"
-      [data]="state.data?.content ?? null"
+      [data]="rows$ | async"
       [totalElements]="state.data?.totalElements ?? 0"
       [pageIndex]="query.page"
       [pageSize]="query.size"
       [sortActive]="query.sort"
       [sortDirection]="query.direction"
-      [loading]="state.loading"
+      [loading]="state.loading || (state.data !== null && (rows$ | async) === null)"
       [error]="state.error"
       [rowActions]="actions"
       [highlight]="isFailed"

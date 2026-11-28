@@ -14,3 +14,9 @@
 @include t.respond-below(t.$bp-sm) {
   .ns-field { width: 100%; }
 }
+
+.resolution-overview { display: grid; gap: t.$space-2; }
+.resolution-overview h2 { margin: 0; }
+.kpi-grid.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@include t.respond-below(t.$bp-lg) { .kpi-grid.five { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@include t.respond-below(t.$bp-sm) { .kpi-grid.five { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -1,0 +1,10 @@
+@use 'tokens' as t;
+
+:host { display: block; }
+
+.suggest {
+  display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-2 t.$space-3; margin-top: t.$space-3;
+  padding: t.$space-2 t.$space-3; border-radius: t.$radius-md; background: t.$surface; border: 1px dashed #afa9ec;
+  > .mat-icon { color: #534ab7; font-size: 18px; width: 18px; height: 18px; }
+  p { flex: 1 1 240px; margin: 0; font-size: t.$fs-base; overflow-wrap: anywhere; }
+}

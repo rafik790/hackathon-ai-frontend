@@ -1,0 +1,82 @@
+@use 'tokens' as t;
+
+:host { display: block; min-width: 0; }
+
+// Purple accent: work tracking, distinct from execution (status colours) and AI (teal and blue).
+$accent: #534ab7;
+$accent-bg: #eeedfe;
+
+.resolution { border-top: 3px solid $accent; }
+.title {
+  display: flex; align-items: flex-start; gap: t.$space-3;
+  .icon {
+    display: inline-flex; align-items: center; justify-content: center; flex: none;
+    width: 32px; height: 32px; border-radius: t.$radius-md; background: $accent-bg; color: $accent;
+  }
+}
+.title .icon .mat-icon, .team .mat-icon { font-size: 20px; width: 20px; height: 20px; }
+.header-actions { display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-2; }
+.derived {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: t.$radius-pill;
+  font-size: t.$fs-sm; font-weight: t.$fw-semibold; color: $accent; background: $accent-bg;
+  .mat-icon { font-size: 16px; width: 16px; height: 16px; }
+}
+.by-status { display: flex; flex-wrap: wrap; gap: t.$space-1 t.$space-3; margin-bottom: t.$space-3; font-size: t.$fs-sm; color: t.$text-secondary; }
+.task { font-size: t.$fs-sm; font-weight: t.$fw-semibold; }
+p { margin: 0; overflow-wrap: anywhere; }
+.muted { color: t.$text-muted; font-size: t.$fs-base; }
+.notice { display: flex; margin-bottom: t.$space-4; }
+app-error-state.notice { display: block; }
+.alert-text { min-width: 0; overflow-wrap: anywhere; }
+.eyebrow, h3, dt { @include t.eyebrow; }
+
+.statuses { display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-3; }
+.status-box { display: grid; gap: 4px; padding: t.$space-2 t.$space-3; border: 1px solid t.$border; border-radius: t.$radius-md; }
+.resolution-box { border-color: #cecbf6; background: $accent-bg; }
+.arrow { color: t.$text-muted; }
+.untracked { font-size: t.$fs-sm; color: t.$text-muted; }
+
+.facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: t.$space-3 t.$space-5; margin: t.$space-4 0 0;
+  dt { margin-bottom: 2px; }
+  dd { margin: 0; font-size: t.$fs-base; overflow-wrap: anywhere; }
+}
+.team { display: flex; align-items: center; gap: t.$space-1; font-weight: t.$fw-semibold; }
+.by { color: t.$text-secondary; }
+.summary { margin-top: t.$space-4; font-size: t.$fs-md; font-weight: t.$fw-semibold; }
+.notes { margin-top: t.$space-2; font-size: t.$fs-base; color: t.$gray-700; white-space: pre-wrap; }
+
+h3 { margin: t.$space-5 0 t.$space-2; }
+.counts { display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-3 t.$space-5; margin-bottom: t.$space-3; }
+.count { display: grid; .value { font-size: t.$fs-xl; font-weight: t.$fw-semibold; line-height: 1.2; } }
+.count.ok .value { color: t.$success; }
+.count.open .value { color: t.$warning; }
+.meter {
+  flex: 1 1 160px; height: 8px; border-radius: t.$radius-pill; background: t.$gray-200; overflow: hidden;
+  > span { display: block; height: 100%; background: t.$success; }
+}
+.table-wrap { overflow-x: auto; border: 1px solid t.$border; border-radius: t.$radius-md; }
+table { width: 100%; border-collapse: collapse; font-size: t.$fs-base; }
+th { @include t.eyebrow; text-align: left; padding: t.$space-2 t.$space-3; background: t.$gray-50; border-bottom: 1px solid t.$border; }
+td { padding: t.$space-2 t.$space-3; border-bottom: 1px solid t.$border; vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+.small { font-size: t.$fs-xs; color: t.$text-muted; overflow-wrap: anywhere; }
+
+.history {
+  margin-top: t.$space-5;
+  summary {
+    display: inline-flex; align-items: center; gap: 2px; cursor: pointer; list-style: none;
+    font-size: t.$fs-base; font-weight: t.$fw-semibold; color: t.$primary-600;
+    &::-webkit-details-marker { display: none; }
+    .mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  }
+  &[open] summary .mat-icon { transform: rotate(90deg); }
+  ol { margin: t.$space-2 0 0; padding: 0 0 0 t.$space-4; list-style: none; border-left: 2px solid #cecbf6; display: grid; gap: t.$space-3; }
+}
+.change {
+  display: flex; flex-wrap: wrap; align-items: center; gap: t.$space-1 t.$space-2;
+  .mat-icon { font-size: 16px; width: 16px; height: 16px; color: t.$text-muted; }
+}
+.when { font-size: t.$fs-sm; color: t.$text-muted; }
+.note { margin-top: 4px; font-size: t.$fs-base; }
+.detail { margin-top: 2px; font-size: t.$fs-sm; color: t.$text-secondary; }

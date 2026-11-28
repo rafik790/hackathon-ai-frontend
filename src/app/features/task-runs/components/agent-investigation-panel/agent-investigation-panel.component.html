@@ -84,6 +84,7 @@
             <span [class]="'ownership ownership-' + ownership.confidence.toLowerCase()">{{ ownershipLabel(ownership.confidence) }}</span>
           </div>
           <p class="reason" *ngIf="ownership.reason">{{ ownership.reason }}</p>
+          <app-resolution-suggestion [investigation]="investigation"></app-resolution-suggestion>
           <div class="checks" *ngIf="report.otherTeamChecks?.length">
             <h5>Needed from other teams</h5>
             <ul>

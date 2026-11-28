@@ -1,13 +1,9 @@
 import { ChangeDetectionStrategy, Component, Input, OnChanges } from '@angular/core';
 import { ApiError } from '../../../../core/models/api-error.model';
-import {
-  AgentInvestigationStep,
-  OwnershipConfidence,
-  ResponsibleTeam,
-  isInvestigationActive,
-} from '../../../../core/models/agent-investigation.models';
+import { AgentInvestigationStep, isInvestigationActive } from '../../../../core/models/agent-investigation.models';
 import { NotificationService } from '../../../../core/services/notification.service';
 import { failureCategoryLabel } from '../../../../shared/failure-analysis/failure-analysis-presentation';
+import { ownershipLabel, teamPresentation } from '../../../../shared/resolution/resolution-presentation';
 import { AgentInvestigationStore, InvestigationTarget } from '../../services/agent-investigation.store';
 
 interface ToolPresentation {
@@ -24,19 +20,6 @@ const TOOLS: Readonly<Record<string, ToolPresentation>> = {
   get_deployment_status: { label: 'Deployment status', icon: 'rocket_launch' },
   get_serviceaccount_details: { label: 'Service account and permissions', icon: 'admin_panel_settings' },
   get_previous_successful_pipelinerun: { label: 'Previous successful run', icon: 'history' },
-};
-
-const TEAMS: Readonly<Record<ResponsibleTeam, ToolPresentation>> = {
-  DEVELOPER: { label: 'Developer', icon: 'code' },
-  DEVOPS_PLATFORM: { label: 'DevOps / Platform', icon: 'dns' },
-  CICD_ENGINEER: { label: 'CI/CD Engineer', icon: 'account_tree' },
-  UNKNOWN: { label: 'Unknown', icon: 'help_outline' },
-};
-
-const OWNERSHIP: Readonly<Record<OwnershipConfidence, string>> = {
-  HIGH: 'High ownership confidence',
-  MEDIUM: 'Medium ownership confidence',
-  LOW: 'Low ownership confidence',
 };
 
 /**
@@ -87,13 +70,8 @@ export class AgentInvestigationPanelComponent implements OnChanges {
     return TOOLS[name] ?? { label: name, icon: 'build' };
   }
 
-  team(team: ResponsibleTeam): ToolPresentation {
-    return TEAMS[team] ?? TEAMS.UNKNOWN;
-  }
-
-  ownershipLabel(confidence: OwnershipConfidence): string {
-    return OWNERSHIP[confidence] ?? OWNERSHIP.LOW;
-  }
+  readonly team = teamPresentation;
+  readonly ownershipLabel = ownershipLabel;
 
   /** Tool results are JSON; shown indented when they are complete. */
   formatResult(text: string): string {

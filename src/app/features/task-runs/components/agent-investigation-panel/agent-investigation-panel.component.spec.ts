@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { AgentInvestigation, AgentInvestigationStep } from '../../../../core/models/agent-investigation.models';
 import { AgentInvestigationApiService } from '../../../../core/services/agent-investigation-api.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { ResolutionUiModule } from '../../../../shared/resolution/resolution-ui.module';
 import { SharedModule } from '../../../../shared/shared.module';
 import { COMPLETED, LOG_STEP, RBAC_COMPLETED, REJECTED_STEP, REPORT_STEP, TARGET, apiError, investigation, page } from '../../testing/agent-investigation.fixtures';
 import { AgentInvestigationPanelComponent } from './agent-investigation-panel.component';
@@ -18,7 +19,7 @@ describe('AgentInvestigationPanelComponent', () => {
     notifications = jasmine.createSpyObj<NotificationService>('notifications', ['info', 'error']);
     TestBed.configureTestingModule({
       declarations: [AgentInvestigationPanelComponent],
-      imports: [SharedModule, NoopAnimationsModule],
+      imports: [SharedModule, ResolutionUiModule, NoopAnimationsModule],
       providers: [
         { provide: AgentInvestigationApiService, useValue: api },
         { provide: NotificationService, useValue: notifications },

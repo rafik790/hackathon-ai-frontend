@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { combineLatest, distinctUntilChanged, map, shareReplay, tap } from 'rxjs';
 import { TaskRun } from '../../../../core/models/execution.models';
@@ -6,6 +7,7 @@ import { loadOnTrigger } from '../../../../core/models/load-state';
 import { RefreshService } from '../../../../core/services/refresh.service';
 import { BreadcrumbService } from '../../../../layout/services/breadcrumb.service';
 import { PipelineRunDetail, PipelineRunsService } from '../../services/pipeline-runs.service';
+import { ResolutionStore } from '../../../../shared/resolution/resolution.store';
 
 export interface TaskSummary {
   readonly total: number;
@@ -21,6 +23,7 @@ export interface TaskSummary {
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pipeline-run-detail.component.html',
   styleUrls: ['./pipeline-run-detail.component.scss'],
+  providers: [ResolutionStore],
 })
 export class PipelineRunDetailComponent {
   private readonly id$ = this.route.paramMap.pipe(
@@ -44,7 +47,11 @@ export class PipelineRunDetailComponent {
     private readonly pipelineRuns: PipelineRunsService,
     private readonly refresh: RefreshService,
     private readonly breadcrumbs: BreadcrumbService,
-  ) {}
+    resolution: ResolutionStore,
+  ) {
+    // Manual and automatic refreshes also reload the resolution, so changes made elsewhere show up here.
+    this.refresh.ticks$.pipe(takeUntilDestroyed()).subscribe(() => resolution.reload());
+  }
 
   openTask(task: TaskRun): void {
     void this.router.navigate(['/task-runs', task.id]);

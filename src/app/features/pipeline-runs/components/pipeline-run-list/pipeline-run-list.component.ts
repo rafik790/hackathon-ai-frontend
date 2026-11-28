@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 import { ActivatedRoute, Router } from '@angular/router';
-import { combineLatest, map, shareReplay } from 'rxjs';
+import { combineLatest, distinctUntilChanged, map, of, shareReplay, switchMap } from 'rxjs';
 import { PipelineRun, PipelineRunSortField } from '../../../../core/models/execution.models';
 import { loadOnTrigger } from '../../../../core/models/load-state';
 import { CollectorStatusStore } from '../../../../core/services/collector-status.store';
@@ -10,6 +10,7 @@ import { RefreshService } from '../../../../core/services/refresh.service';
 import { RowActionEvent } from '../../../../shared/components/data-table/data-table.models';
 import { ExecutionFilterValue } from '../../../../shared/components/filter-bar/filter-bar.component';
 import { OPEN_DETAILS_ACTION, VIEW_TASKS_ACTION, isFailed, pipelineRunColumns } from '../../../../shared/execution/execution-columns';
+import { ResolutionLookupService, resolutionColumn } from '../../../../shared/resolution/resolution-lookup.service';
 import {
   ListQueryState,
   filterValueOf,
@@ -32,7 +33,7 @@ import {
   templateUrl: './pipeline-run-list.component.html',
 })
 export class PipelineRunListComponent {
-  readonly columns = pipelineRunColumns();
+  readonly columns = [...pipelineRunColumns(), resolutionColumn<PipelineRun>('Resolution')];
   readonly actions = [OPEN_DETAILS_ACTION, VIEW_TASKS_ACTION];
   readonly isFailed = isFailed;
 
@@ -45,6 +46,13 @@ export class PipelineRunListComponent {
   readonly state$ = loadOnTrigger(
     combineLatest([this.query$, this.refresh.trigger$]).pipe(map(([query]) => query)),
     (query) => this.pipelineRuns.list(query),
+  ).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+  /** The page with the derived resolution of each failed PipelineRun (a dash for the others), one batch request per load. */
+  readonly rows$ = this.state$.pipe(
+    map((state) => state.data?.content ?? null),
+    distinctUntilChanged(),
+    switchMap((rows) => (rows ? this.resolutions.attach('PIPELINE_RUN', rows) : of(null))),
+    shareReplay({ bufferSize: 1, refCount: true }),
   );
   readonly namespaces$ = this.collector.namespaces$;
 
@@ -54,6 +62,7 @@ export class PipelineRunListComponent {
     private readonly pipelineRuns: PipelineRunsService,
     private readonly refresh: RefreshService,
     private readonly collector: CollectorStatusStore,
+    private readonly resolutions: ResolutionLookupService,
   ) {}
 
   onFilter(query: ListQueryState<PipelineRunSortField>, value: ExecutionFilterValue): void {

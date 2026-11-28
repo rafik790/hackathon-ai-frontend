@@ -1,4 +1,5 @@
 import { NgModule } from '@angular/core';
+import { ResolutionUiModule } from '../../shared/resolution/resolution-ui.module';
 import { FailureAnalysisUiModule } from '../../shared/failure-analysis/failure-analysis-ui.module';
 import { SharedModule } from '../../shared/shared.module';
 import { AgentInvestigationPanelComponent } from './components/agent-investigation-panel/agent-investigation-panel.component';
@@ -12,7 +13,7 @@ import { TaskRunsRoutingModule } from './task-runs-routing.module';
 @NgModule({
   declarations: [TaskRunListComponent, TaskRunDetailComponent, FailureAnalysisPanelComponent, FailureAnalysisResultComponent,
     AgentInvestigationPanelComponent],
-  imports: [SharedModule, FailureAnalysisUiModule, TaskRunsRoutingModule],
+  imports: [SharedModule, FailureAnalysisUiModule, ResolutionUiModule, TaskRunsRoutingModule],
   providers: [TaskRunsService],
 })
 export class TaskRunsModule {}

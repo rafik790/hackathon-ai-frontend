@@ -1,0 +1,143 @@
+<section class="card resolution" id="resolution" aria-labelledby="resolution-title" *ngIf="state$ | async as state">
+  <header class="card-header">
+    <div class="title">
+      <span class="icon" aria-hidden="true"><mat-icon>flag</mat-icon></span>
+      <div>
+        <h2 id="resolution-title">{{ isPipelineRun ? 'Resolution summary' : 'Resolution' }}</h2>
+        <div class="subtitle" *ngIf="!isPipelineRun">Tracks the work on this failure. Separate from the Tekton execution status; no AI investigation is needed.</div>
+        <div class="subtitle" *ngIf="isPipelineRun">Derived from the resolution of each failed TaskRun. Update a TaskRun to change it.</div>
+      </div>
+    </div>
+    <div class="header-actions" *ngIf="!isPipelineRun && state.resolution?.status">
+      <ng-container *ngFor="let action of actions(state.resolution!.nextStatuses); let first = first">
+        <button *ngIf="first" mat-flat-button color="primary" type="button" class="status-action"
+                [disabled]="state.loading || state.saving" (click)="edit(action.status)">
+          <mat-icon>{{ action.icon }}</mat-icon>{{ action.label }}
+        </button>
+        <button *ngIf="!first" mat-stroked-button color="primary" type="button" class="status-action"
+                [disabled]="state.loading || state.saving" (click)="edit(action.status)">
+          <mat-icon>{{ action.icon }}</mat-icon>{{ action.label }}
+        </button>
+      </ng-container>
+      <button mat-button type="button" [disabled]="state.loading || state.saving" (click)="edit()">
+        <mat-icon>edit_note</mat-icon>Edit details
+      </button>
+    </div>
+    <span class="derived" *ngIf="isPipelineRun"><mat-icon aria-hidden="true">functions</mat-icon>Automatic</span>
+  </header>
+
+  <div class="card-body" aria-live="polite">
+    <div class="inline-alert danger notice" *ngIf="state.saveError as error" role="alert">
+      <mat-icon aria-hidden="true">error_outline</mat-icon>
+      <div class="alert-text"><strong>{{ saveErrorTitle(error) }}</strong> {{ error.message }}</div>
+    </div>
+    <app-error-state *ngIf="state.error && state.resolution" class="notice" [inline]="true" [error]="state.error" (retry)="reload()"></app-error-state>
+
+    <ng-container *ngIf="state.resolution as resolution; else none">
+      <app-empty-state
+        *ngIf="!resolution.status; else tracked"
+        icon="check_circle"
+        title="Nothing to resolve"
+        [message]="isPipelineRun ? 'This PipelineRun has no failed TaskRuns.' : 'This TaskRun has not failed, so it has no resolution.'"
+        [compact]="true"
+      ></app-empty-state>
+
+      <ng-template #tracked>
+        <div class="statuses">
+          <div class="status-box">
+            <span class="eyebrow">Execution (Tekton)</span>
+            <app-status-badge [status]="resolution.executionStatus ?? 'UNKNOWN'" size="sm"></app-status-badge>
+          </div>
+          <mat-icon class="arrow" aria-hidden="true">east</mat-icon>
+          <div class="status-box resolution-box">
+            <span class="eyebrow">{{ isPipelineRun ? 'Resolution (all failed TaskRuns)' : 'Resolution' }}</span>
+            <app-status-badge class="resolution-status" [status]="resolution.status" size="sm"></app-status-badge>
+          </div>
+          <span class="untracked" *ngIf="!resolution.tracked">No one has worked on it yet.</span>
+        </div>
+
+        <dl class="facts">
+          <div>
+            <dt>Assigned team</dt>
+            <dd class="team" *ngIf="resolution.assignedTeam as assigned; else dash">
+              <mat-icon aria-hidden="true">{{ team(assigned).icon }}</mat-icon>{{ team(assigned).label }}
+            </dd>
+          </div>
+          <div *ngIf="!isPipelineRun"><dt>Assigned person</dt><dd>{{ resolution.assignedPerson || '—' }}</dd></div>
+          <div>
+            <dt>Last updated</dt>
+            <dd *ngIf="resolution.updatedAt; else dash">
+              {{ resolution.updatedAt | date: 'medium' }}<span class="by" *ngIf="resolution.updatedBy"> by {{ resolution.updatedBy }}</span>
+            </dd>
+          </div>
+          <div *ngIf="resolution.resolvedAt"><dt>Resolved</dt><dd>{{ resolution.resolvedAt | date: 'medium' }}</dd></div>
+        </dl>
+        <p class="summary" *ngIf="resolution.summary">{{ resolution.summary }}</p>
+        <p class="notes" *ngIf="resolution.notes">{{ resolution.notes }}</p>
+
+        <section class="taskruns" *ngIf="resolution.taskRuns as summary" aria-labelledby="resolution-taskruns">
+          <h3 id="resolution-taskruns">Failed TaskRuns</h3>
+          <div class="counts">
+            <div class="count"><span class="value">{{ summary.failedTaskRuns }}</span><span class="eyebrow">Failed</span></div>
+            <div class="count ok"><span class="value">{{ summary.resolvedTaskRuns }}</span><span class="eyebrow">Resolved</span></div>
+            <div class="count open"><span class="value">{{ summary.unresolvedTaskRuns }}</span><span class="eyebrow">Unresolved</span></div>
+            <span class="meter" role="meter" aria-label="Resolved TaskRuns" aria-valuemin="0" aria-valuemax="100" [attr.aria-valuenow]="percent(summary)">
+              <span [style.width.%]="percent(summary)"></span>
+            </span>
+          </div>
+          <p class="by-status" *ngIf="unresolvedCounts(summary.byStatus).length">
+            <span *ngFor="let entry of unresolvedCounts(summary.byStatus)">{{ label(entry.status) }}: {{ entry.count }}</span>
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th scope="col">Task</th><th scope="col">Execution</th><th scope="col">Resolution</th><th scope="col">Team</th><th scope="col">Updated</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of summary.items; trackBy: trackItem">
+                  <td>
+                    <a *ngIf="item.taskRunId !== null; else gone" [routerLink]="['/task-runs', item.taskRunId]" fragment="resolution">
+                      {{ item.taskName ?? item.taskRunName }}
+                    </a>
+                    <ng-template #gone><span>{{ item.taskName ?? item.taskRunName }}</span> <span class="muted">(no longer stored)</span></ng-template>
+                    <div class="mono small">{{ item.taskRunName }}</div>
+                  </td>
+                  <td><app-status-badge [status]="item.executionStatus ?? 'UNKNOWN'" size="sm"></app-status-badge></td>
+                  <td><app-status-badge [status]="item.status" size="sm"></app-status-badge></td>
+                  <td>{{ item.assignedTeam ? team(item.assignedTeam).label : '—' }}</td>
+                  <td>{{ (item.updatedAt | date: 'short') ?? '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <details class="history" [open]="state.history.length > 0 && state.history.length <= 3">
+          <summary><mat-icon aria-hidden="true">chevron_right</mat-icon>Resolution history ({{ state.history.length }})</summary>
+          <ol *ngIf="state.history.length; else noHistory">
+            <li *ngFor="let entry of state.history; trackBy: trackEntry">
+              <div class="change">
+                <span class="task" *ngIf="isPipelineRun">{{ entry.taskRunName }}</span>
+                <app-status-badge *ngIf="entry.previousStatus" [status]="entry.previousStatus" size="sm"></app-status-badge>
+                <mat-icon *ngIf="entry.previousStatus" aria-hidden="true">east</mat-icon>
+                <app-status-badge [status]="entry.newStatus" size="sm"></app-status-badge>
+                <span class="when">{{ entry.changedAt | date: 'medium' }} · {{ entry.changedBy || 'unknown' }}</span>
+              </div>
+              <p class="note" *ngIf="entry.note">{{ entry.note }}</p>
+              <p class="detail" *ngIf="entry.assignedTeam || entry.assignedPerson">
+                Assigned to {{ entry.assignedTeam ? team(entry.assignedTeam).label : '' }}{{ entry.assignedTeam && entry.assignedPerson ? ', ' : '' }}{{ entry.assignedPerson }}
+              </p>
+            </li>
+          </ol>
+          <ng-template #noHistory><p class="muted">No changes yet.</p></ng-template>
+        </details>
+      </ng-template>
+    </ng-container>
+
+    <ng-template #none>
+      <app-loading-skeleton *ngIf="state.loading" variant="text" [rows]="3"></app-loading-skeleton>
+      <app-error-state *ngIf="!state.loading && state.error" [error]="state.error" [inline]="true" (retry)="reload()"></app-error-state>
+    </ng-template>
+    <ng-template #dash><dd>—</dd></ng-template>
+  </div>
+</section>

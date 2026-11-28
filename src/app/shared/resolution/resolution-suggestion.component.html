@@ -1,0 +1,9 @@
+<ng-container *ngIf="state$ | async as state">
+  <div class="suggest" *ngIf="state.resolution && suggestion(state.resolution) as suggested">
+    <mat-icon aria-hidden="true">lightbulb</mat-icon>
+    <p><strong>Suggested for the TaskRun resolution:</strong> {{ suggested.text }}</p>
+    <button mat-stroked-button color="primary" type="button" [disabled]="state.saving" (click)="apply(suggested)">
+      Review and apply
+    </button>
+  </div>
+</ng-container>
